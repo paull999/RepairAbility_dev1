@@ -1019,7 +1019,7 @@ function sbLogin(mode){
       if(mode==='in'){const{data,error}=await SB.auth.signInWithPassword({email:em,password:f.pw});if(error)return err(/confirm/i.test(error.message)?'Please confirm your email address first. Check your inbox for the link.':'Email or password is incorrect.');au.hidden=true;SBRES&&SBRES(data.session)}
       else if(mode==='up'){const pe=pwErr(f.pw);if(pe)return err(pe);if(f.pw!==f.pw2)return err('The passwords do not match');
         const{data,error}=await SB.auth.signUp({email:em,password:f.pw,options:{data:{name:(f.name||'').trim()},emailRedirectTo:location.href.split('#')[0]}});
-        if(error)return err(/database error|not been set up|no active person/i.test(error.message)?'That email address has not been set up. Ask an administrator to add you as a person first.':error.message);
+        if(error)return err(/database error|not been set up|no active person/i.test(error.message)?'The account could not be created. If you are not the first person to sign up, ask an administrator to add you as a person first. If you are the first, the database setup may be incomplete.':error.message);
         if(data.session){au.hidden=true;SBRES&&SBRES(data.session)}else err('Account created. Check your email for a confirmation link, then sign in.',1)}
       else{const{error}=await SB.auth.resetPasswordForEmail(em,{redirectTo:location.href.split('#')[0]});if(error)return err(error.message);err('If that address has an account, a reset link is on its way.',1)}
     }finally{btn.disabled=false}};

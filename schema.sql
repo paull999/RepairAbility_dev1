@@ -50,7 +50,7 @@ grant execute on function public.ra_me(), public.ra_is_active(), public.ra_is_ad
 -- already added a person with that email address.
 -- ---------------------------------------------------------------------------
 create or replace function public.ra_before_signup() returns trigger
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public, extensions as $$
 declare em text := lower(coalesce(new.email,'')); has_admin boolean; nm text;
 begin
   perform pg_advisory_xact_lock(7770001);
