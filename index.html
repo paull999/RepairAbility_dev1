@@ -563,6 +563,7 @@ function previewMsgs(jid){
   const fs=(a.formats||[]).map(i=>D.formats.find(f=>f.id===i)).filter(Boolean);if(!fs.length)return;
   const o=orgn(j.org),t=D.jobTypes.find(x=>x.id===j.jobType);
   const ctx={agent_name:a.name,job_number:String(j.number),job_title:j.title,organisation:o?.name||'',organisation_address:oaddr(o),job_type:t?.name||'',duration:t?dur(t.minutes):'',date:j.date?fmt(j.date):'',priority:j.priority,status:j.status,notes:j.notes||''};
+  if(window.sbSend){sbSend(j,a,fs,ctx);return}
   let i=0;
   const show=()=>{
     const f=fs[i],em=f.channel==='Email',to=em?(a.email||'no email address saved'):(a.phone||'no phone number saved'),last=i===fs.length-1;
@@ -1054,6 +1055,18 @@ function sbPw(mode,id){
   }
   $('#pwx').onclick=()=>$('#pwd').close();
   if(!$('#pwd').open)$('#pwd').showModal();
+}
+async function sbSend(j,a,fs,ctx){
+  const res=[];
+  for(const f of fs){const em=f.channel==='Email',to=em?(a.email||''):(a.phone||'');
+    if(!to){res.push([f,false,'No '+(em?'email address':'phone number')+' is saved for '+a.name]);continue}
+    try{const{error}=await SB.functions.invoke('send-message',{body:{channel:f.channel,to,subject:renderTpl(f.subject,ctx),body:renderTpl(f.body,ctx)}});
+      if(error){let msg=error.message||'The message could not be sent';try{const x=await error.context.json();if(x&&x.error)msg=x.error}catch(e){}res.push([f,false,msg])}else res.push([f,true,''])}
+    catch(e){res.push([f,false,(e&&e.message)||'The message could not be sent'])}}
+  const bad=res.filter(r=>!r[1]);
+  if(!bad.length){toast(res.length>1?res.length+' messages sent to '+a.name:'Message sent to '+a.name);return}
+  $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">${bad.length===res.length?'Message not sent':'Some messages not sent'}</h2><p style="margin:0 0 12px;color:var(--mute)">Job ${esc(String(j.number))} was assigned to ${esc(a.name)}.</p><ul style="margin:0 0 14px;padding-left:18px">${res.map(([f,ok,m])=>`<li style="margin-bottom:6px"><strong>${esc(f.name)}</strong> (${esc(f.channel)}): ${ok?'sent':'<span style="color:var(--urgent)">not sent</span>. '+esc(m)}</li>`).join('')}</ul><div style="display:flex;justify-content:flex-end"><button type="button" class="btn" id="pvn">Close</button></div>`;
+  $('#pvn').onclick=()=>$('#pv').close();if(!$('#pv').open)$('#pv').showModal();
 }
 async function sbBoot(){
   const c=window.RA_CONFIG||{};

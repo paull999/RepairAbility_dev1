@@ -89,3 +89,15 @@ policies are in `schema.sql` if you want to review them.
 - **Email sending**: Supabase's built-in email is rate-limited (a few messages an hour). For real
   use, add your own SMTP provider under Authentication -> SMTP Settings (Resend, Postmark, SendGrid...).
 - Signing out, or 30 minutes of inactivity, clears the session and reloads the page.
+
+## Sending messages to Repair Agents
+
+When a Repair Agent is assigned to a job, the app sends them the messages for the formats ticked on
+their person record, using each format's channel (Email or Text Message). This is done by the
+`send-message` Edge Function (`supabase functions deploy send-message`). Set the provider secrets for
+the channels you use (Project Settings, Edge Functions, Secrets):
+
+- Email (Resend): `RESEND_API_KEY`, `MAIL_FROM` (a sender on a domain you have verified)
+- Text message (Twilio): `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`
+
+Until a channel is set up, the app tells the user the message was not sent and why.
