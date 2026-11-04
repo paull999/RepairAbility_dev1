@@ -4,8 +4,8 @@
  "description": "Job management for service teams",
  "display": "standalone",
  "orientation": "portrait",
- "background_color": "#eceff0",
- "theme_color": "#12252b",
+ "background_color": "#eef2f0",
+ "theme_color": "#123a36",
  "start_url": ".",
  "scope": ".",
  "icons": [
