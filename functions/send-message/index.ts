@@ -49,7 +49,11 @@ Deno.serve(async (req: Request) => {
       headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from, to: [to], subject: subject || 'New job', text }),
     });
-    if (!r.ok) { console.error('resend', r.status, await r.text()); return reply(502, { error: 'The email provider refused the message' }); }
+    if (!r.ok) {
+      const t = await r.text(); console.error('resend', r.status, t);
+      let m = ''; try { m = JSON.parse(t).message || ''; } catch { /* not JSON */ }
+      return reply(502, { error: 'The email provider refused the message' + (m ? ': ' + m : '') });
+    }
     return reply(200, { sent: true });
   }
 
