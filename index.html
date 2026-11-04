@@ -264,7 +264,7 @@ function applyRemote(){
   if(REMMETA){const mc=canon(REMMETA);if(mc!==SYNC.meta&&!(SYNC.meta!==null&&canon(metaOf())!==SYNC.meta)){Object.keys(D).filter(k=>!COLS.includes(k)&&!(k in REMMETA)).forEach(k=>delete D[k]);Object.entries(REMMETA).forEach(([k,v])=>{D[k]=k==='jobSeq'?Math.max(+D.jobSeq||0,+v||0):JSON.parse(JSON.stringify(v))});SYNC.meta=mc;ch=true}}
   if(ch&&ME){const n=D.users.find(u=>u.id===ME.id);if(n)ME=n}
   if(ch)NEEDR=true;return ch}
-async function putBlob(id,data){if(BHAVE.has(id))return;const N=200000,n=Math.ceil(data.length/N);for(let i=0;i<n;i++)await db.doc('blobs/'+id+'~'+i).set({b:id,i,n,d:data.slice(i*N,(i+1)*N)});BHAVE.add(id)}
+async function putBlob(id,data){if(BHAVE.has(id))return;if(db.putBlob){await db.putBlob(id,data);BHAVE.add(id);return}const N=200000,n=Math.ceil(data.length/N);for(let i=0;i<n;i++)await db.doc('blobs/'+id+'~'+i).set({b:id,i,n,d:data.slice(i*N,(i+1)*N)});BHAVE.add(id)}
 function syncFail(e){const c=e&&e.code;if(c==='quota_exceeded')toast('The shared database is full. Remove some photos or documents.');else if(c==='invalid_argument'){RO=true;toast('Your access is view-only, so changes are not being saved.')}else if(c==='revoked'){CLOUD=false;toast('Access to the shared database was removed.')}else{toast('Couldn’t save to the shared database. Retrying…');setTimeout(flush,5000)}}
 async function flush(){
   if(!CLOUD||RO)return;if(FL){FQ=true;return}FL=true;
@@ -983,9 +983,22 @@ function sbAdapter(sb){
   const cache=new Map(),subs=new Map();let chan=null,ready=null,first=true;
   const er=e=>{const c=String(e&&e.code||'');return Object.assign(new Error(e&&e.message||'Database error'),{code:c==='42501'?'invalid_argument':undefined,raw:e})};
   const emit=c=>(subs.get(c)||new Set()).forEach(f=>{try{f()}catch(x){console.error(x)}});
-  const fetchColl=async c=>{const m=new Map();for(let a=0;;a+=1000){const{data,error}=await sb.from('docs').select('id,data').eq('coll',c).order('id').range(a,a+999);if(error)throw er(error);data.forEach(r=>m.set(r.id,r.data));if(data.length<1000)break}cache.set(c,m)};
+  const BK='photos',bmap=new Map();let brt=null;
+  const toDU=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b)});
+  const bup=async(id,du)=>{const bl=await(await fetch(du)).blob();const{error}=await sb.storage.from(BK).upload(id,bl,{contentType:bl.type||'application/octet-stream',upsert:false});if(error&&!/exist|duplicate/i.test(error.message||''))throw er(error)};
+  const fetchBlobs=async()=>{
+    const names=[];for(let o=0;;o+=100){const{data,error}=await sb.storage.from(BK).list('',{limit:100,offset:o});if(error)throw er(error);data.forEach(x=>names.push(x.name));if(data.length<100)break}
+    const todo=names.filter(n=>!bmap.has(n));
+    for(let i=0;i<todo.length;i+=6)await Promise.all(todo.slice(i,i+6).map(async n=>{const{data,error}=await sb.storage.from(BK).download(n);if(!error&&data)bmap.set(n,await toDU(data))}));
+    const old=new Map();
+    for(let a=0;;a+=1000){const{data,error}=await sb.from('docs').select('id,data').eq('coll','blobs').order('id').range(a,a+999);if(error)break;data.forEach(r=>{const x=r.data||{},b=old.get(x.b)||{n:x.n,parts:[],ids:[]};b.parts[x.i]=x.d;b.ids.push(r.id);old.set(x.b,b)});if(data.length<1000)break}
+    for(const[id,b]of old){if(b.parts.length<b.n||b.parts.some(x=>x==null))continue;const du=b.parts.join('');
+      if(!bmap.has(id)){try{await bup(id,du)}catch(e){bmap.set(id,du);continue}bmap.set(id,du)}
+      for(const k of b.ids)await sb.from('docs').delete().eq('path','blobs/'+k)}
+    const m=new Map();bmap.forEach((d,id)=>m.set(id+'~0',{b:id,i:0,n:1,d}));cache.set('blobs',m)};
+  const fetchColl=async c=>{if(c==='blobs')return fetchBlobs();const m=new Map();for(let a=0;;a+=1000){const{data,error}=await sb.from('docs').select('id,data').eq('coll',c).order('id').range(a,a+999);if(error)throw er(error);data.forEach(r=>m.set(r.id,r.data));if(data.length<1000)break}cache.set(c,m)};
   const ensure=()=>{if(ready)return ready;ready=new Promise(res=>{
-    chan=sb.channel('ra-docs').on('postgres_changes',{event:'*',schema:'public',table:'docs'},p=>{const r=p.eventType==='DELETE'?p.old:p.new;if(!r||!r.coll||!cache.has(r.coll))return;if(p.eventType==='DELETE')cache.get(r.coll).delete(r.id);else cache.get(r.coll).set(r.id,r.data);emit(r.coll)})
+    chan=sb.channel('ra-docs').on('postgres_changes',{event:'*',schema:'public',table:'docs'},p=>{const r=p.eventType==='DELETE'?p.old:p.new;if(!r||!r.coll||r.coll==='blobs'||!cache.has(r.coll))return;if(cache.has('blobs')){clearTimeout(brt);brt=setTimeout(()=>fetchBlobs().then(()=>emit('blobs')).catch(()=>{}),1500)}if(p.eventType==='DELETE')cache.get(r.coll).delete(r.id);else cache.get(r.coll).set(r.id,r.data);emit(r.coll)})
       .subscribe(st=>{if(st==='SUBSCRIBED'){if(!first)[...cache.keys()].forEach(c=>fetchColl(c).then(()=>emit(c)).catch(()=>{}));first=false;res()}});
     setTimeout(res,6000)});return ready};
   const listen=(c,fn,bad)=>{let off=false;const f=()=>{if(!off)fn()};(subs.get(c)||subs.set(c,new Set()).get(c)).add(f);
@@ -994,12 +1007,13 @@ function sbAdapter(sb){
   const csnap=c=>({metadata:{fromCache:false},docs:[...(cache.get(c)||new Map())].map(([id,d])=>({id,data:()=>d}))});
   const split=p=>{const i=p.indexOf('/');return[p.slice(0,i),p.slice(i+1)]};
   return{
+    putBlob:async(id,du)=>{await bup(id,du);bmap.set(id,du);if(cache.has('blobs')){cache.get('blobs').set(id+'~0',{b:id,i:0,n:1,d:du});emit('blobs')}},
     collection:c=>({
       onSnapshot:(ok,bad)=>listen(c,()=>ok(csnap(c)),bad),
       get:async()=>{await fetchColl(c);return csnap(c)}}),
     doc:p=>{const[c,id]=split(p);return{
-      set:async d=>{const{error}=await sb.from('docs').upsert({path:p,coll:c,id,data:d});if(error)throw er(error);if(cache.has(c)){cache.get(c).set(id,d);emit(c)}},
-      delete:async()=>{const{error}=await sb.from('docs').delete().eq('path',p);if(error)throw er(error);if(cache.has(c)){cache.get(c).delete(id);emit(c)}},
+      set:async d=>{if(c==='blobs'){if(d&&d.n===1&&d.i===0)await bup(d.b,d.d);return}const{error}=await sb.from('docs').upsert({path:p,coll:c,id,data:d});if(error)throw er(error);if(cache.has(c)){cache.get(c).set(id,d);emit(c)}},
+      delete:async()=>{if(c==='blobs'){const b=id.split('~')[0];await sb.storage.from(BK).remove([b]);bmap.delete(b);if(cache.has(c)){cache.get(c).delete(b+'~0');emit(c)}return}const{error}=await sb.from('docs').delete().eq('path',p);if(error)throw er(error);if(cache.has(c)){cache.get(c).delete(id);emit(c)}},
       onSnapshot:(ok,bad)=>listen(c,()=>{const d=(cache.get(c)||new Map()).get(id);ok({metadata:{fromCache:false},exists:d!==undefined,id,data:()=>d})},bad),
       acquire:async()=>({acquired:true})}}}}
 function sbSetup(msg){$('#boot').hidden=true;const au=$('#auth');au.hidden=false;au.innerHTML=`<div class="authbox"><div class="brand" style="color:var(--ink);padding:0"><svg class="mk" viewBox="0 0 138 130" aria-hidden="true"><path class="l" d="M62 5A57 57 0 0 0 62 119Z"/><path class="o" d="M75 11A57 57 0 0 1 75 125Z"/><rect class="s" x="45" y="59" width="58" height="20" rx="10"/></svg><span>repair<i>ability</i></span></div><h2 style="margin:0;font-size:20px">Connect to Supabase</h2><p style="margin:0;color:var(--mute)">${esc(msg)}</p></div>`}

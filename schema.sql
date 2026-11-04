@@ -392,3 +392,22 @@ begin
 end $$;
 revoke all on function public.ra_admin_set_password(text, text) from public, anon, authenticated;
 grant execute on function public.ra_admin_set_password(text, text) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Photo storage. Photos live as files in a private Storage bucket ("photos"),
+-- one object per image, named by its content hash. Only active people can read
+-- or add photos; only administrators can delete them.
+-- ---------------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('photos', 'photos', false, 10485760)
+on conflict (id) do update set public = false, file_size_limit = 10485760;
+
+drop policy if exists ra_photos_read on storage.objects;
+create policy ra_photos_read on storage.objects for select to authenticated
+  using (bucket_id = 'photos' and public.ra_is_active());
+drop policy if exists ra_photos_add on storage.objects;
+create policy ra_photos_add on storage.objects for insert to authenticated
+  with check (bucket_id = 'photos' and public.ra_is_active());
+drop policy if exists ra_photos_del on storage.objects;
+create policy ra_photos_del on storage.objects for delete to authenticated
+  using (bucket_id = 'photos' and public.ra_is_admin());
