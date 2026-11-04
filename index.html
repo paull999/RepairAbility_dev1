@@ -152,7 +152,7 @@ form{grid-template-columns:minmax(0,1fr)}
   <div class="brand"><svg class="mk" viewBox="0 0 138 130" aria-hidden="true"><path class="l" d="M62 5A57 57 0 0 0 62 119Z"/><path class="o" d="M75 11A57 57 0 0 1 75 125Z"/><rect class="s" x="45" y="59" width="58" height="20" rx="10"/></svg><span>repair<i>ability</i></span></div>
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
-  <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span><br><button class="btn ghost" id="theme" style="margin-top:8px;color:inherit;border-color:rgba(255,255,255,.25)">Switch theme</button><br><button class="btn ghost" id="rsa" style="margin-top:8px;color:inherit;border-color:rgba(255,255,255,.25)">Reset app</button></div>
+  <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span><br><button class="btn ghost" id="theme" style="margin-top:8px;color:inherit;border-color:rgba(255,255,255,.25)">Switch theme</button></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -166,7 +166,7 @@ form{grid-template-columns:minmax(0,1fr)}
 <dialog id="bkd"><form id="bkc" method="dialog" style="padding:22px;display:grid;grid-template-columns:1fr;gap:12px;min-width:min(440px,90vw)"></form></dialog>
 <dialog id="imgd"><div style="padding:14px"><img id="imgv" alt="" style="max-width:min(86vw,800px);max-height:78vh;display:block;margin:0 auto"><div style="text-align:right;margin-top:10px"><button type="button" class="btn" id="imgx">Close</button></div></div></dialog>
 <dialog id="cfm"><div style="padding:22px"><h2 style="margin:0 0 14px;font-size:20px" id="cfmt"></h2><div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="cfmn">Cancel</button><button type="button" class="btn danger" id="cfmy">OK</button></div></div></dialog>
-<dialog id="rst"><div style="padding:22px"><h2 style="margin:0 0 6px;font-size:20px">Reset RepairAbility?</h2><p style="margin:0 0 14px;color:var(--mute)">This permanently deletes all jobs, people, organisations, skills, diaries, photos, job types and message formats for everyone who uses this app (or in this browser if the shared database isn’t available), then restores the starter job types and message formats. It can’t be undone.</p><div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="rstn">Cancel</button><button type="button" class="btn danger" id="rsty">Yes, reset everything</button></div></div></dialog>
+
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="config.js"></script>
@@ -326,7 +326,6 @@ function render(){
   $('#main').classList.toggle('nofilt',!!HF2[V.view]);
   $('#main').innerHTML=V.view==='jobs'?jobsView():V.view==='users'?userView():V.view==='orgs'?orgView():V.view==='setup'?setupView():V.view==='parts'?partsView():jobsView();
   $('#who').innerHTML=`Signed in as<br><strong>${esc(ME.name)}</strong> · ${esc(ME.role)}<br><button class="btn ghost" id="cpw" style="margin-top:8px;padding:4px 10px;color:inherit;border-color:rgba(255,255,255,.25)">Change password</button> <button class="btn ghost" id="out" style="margin-top:8px;padding:4px 10px;color:inherit;border-color:rgba(255,255,255,.25)">Sign out</button>`;
-  $('#rsa').hidden=!ADM();
   enhanceTables();clampRows();pageLists();applyViewType();
 }
 const isPhone=()=>matchMedia('(max-width:700px)').matches;
@@ -972,9 +971,6 @@ document.addEventListener('pointerdown',e=>{const hd=e.target.closest&&e.target.
 document.addEventListener('dblclick',e=>{const hd=e.target.closest&&e.target.closest('.rzh');if(!hd||!ME)return;const t=hd.closest('table');if(ME.colw)delete ME.colw[tblKey(t)];save();render();toast('Column widths reset')});
 matchMedia('(max-width:700px)').addEventListener('change',()=>{if(ME&&V.view==='jobs')render()});
 document.addEventListener('invalid',e=>{const c=e.target.closest&&e.target.closest('[data-tab]');if(c&&c.hidden)showTab(c.dataset.tab)},true);
-$('#rsa').onclick=()=>$('#rst').showModal();
-$('#rstn').onclick=()=>$('#rst').close();
-$('#rsty').onclick=async()=>{try{if(CLOUD){$('#rsty').disabled=true;await cloudWipe();D=null;load(seed());$('#rsty').disabled=false}else{localStorage.removeItem('fieldline');D=null;load()}}catch(e){D=null;load(seed())}save();V={view:'jobs',q:'',agent:'',status:'',sort:'number',dir:1};render();$('#rst').close();toast('App reset')};
 $('#theme').onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=dark?'light':'dark'};
 
 /* ================= Supabase data layer and sign-in ================= */
