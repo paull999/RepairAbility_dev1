@@ -1066,7 +1066,7 @@ document.addEventListener('click',e=>{const t=e.target;if(!t||!t.id||!$('#frm'))
   if(t.id==='pwshow'){const sh=i.type==='password';i.type=sh?'text':'password';t.textContent=sh?'Hide':'Show'}
   if(t.id==='pwgen'){const A='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789',r=new Uint32Array(14);crypto.getRandomValues(r);let p=[...r].map(n=>A[n%A.length]).join('');
     if(pwErr(p))p='Aa3'+p.slice(3);i.value=p;i.type='text';i.setCustomValidity('');$('#pwshow').textContent='Hide';
-    try{navigator.clipboard&&navigator.clipboard.writeText(p)}catch(x){}toast('Password generated. Copy it now to give to the person.')}});
+    try{navigator.clipboard&&navigator.clipboard.writeText(p).catch(()=>{})}catch(x){}toast('Password generated. Copy it now to give to the person.')}});
 load();
 ['click','keydown'].forEach(ev=>document.addEventListener(ev,()=>{LAST=Date.now()}));
 setInterval(()=>{if(ME&&Date.now()-LAST>18e5)signOut('You were signed out after 30 minutes of inactivity.')},30000);
