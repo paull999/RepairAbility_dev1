@@ -17,7 +17,10 @@ by the database itself (not just the screen).
    (e.g. London). Save the database password somewhere safe.
 2. Open **SQL Editor -> New query**, paste all of `schema.sql`, click **Run**. You should see "Success".
 3. Open **Authentication -> Sign In / Providers -> Email** and check:
-   - **Confirm email: ON** (keep it on. It stops someone claiming an invited email address).
+   - **Confirm email**: can stay on. Only the very first account uses the sign-up screen (and it is confirmed by email);
+     after that, administrators create everyone else's account in the app, already confirmed, so no emails are sent.
+     Note: Supabase's built-in email sender allows only about 2 emails an hour. Add your own SMTP under
+     **Authentication -> Emails -> SMTP Settings** if you want password-reset emails to work reliably.
    - **Minimum password length: 10**.
 4. Open **Authentication -> URL Configuration** and set **Site URL** to the address the app will
    be hosted at (e.g. `https://repairability.netlify.app`). Add the same address to **Redirect URLs**.
@@ -50,13 +53,16 @@ You get an `https://` address. Put that address into Supabase's Site URL (step 1
 ## 4. First sign-in
 
 1. Open the site, click **Create account**, and enter your name, email and a password.
-   **The very first account created becomes the system administrator.**
-2. Click the confirmation link in the email, then sign in.
-3. In the app, add people under **People** (set their email, role, type and organisation).
-4. Each person opens the site, clicks **Create account** using the email you entered, confirms it,
-   and signs in. Anyone whose email has not been added, or whose status is Inactive, is refused.
-5. Forgot password: **Forgot password?** on the sign-in screen, or an administrator can press
-   **Send reset email** next to a person in the People list.
+   **The very first account created becomes the system administrator.** The **Create account** button is
+   shown only while no administrator exists; once one does, sign-up is closed (the database refuses it too).
+2. If email confirmation is on, click the link in the email, then sign in.
+3. In the app, add people under **People**. Set their email, role, type and organisation, and a
+   **Sign-in password** (at least 10 characters). Saving creates their account, already confirmed. Give them
+   the password; they can change it with **Change password**. To reset it later, edit the person and enter a new one.
+4. Deploy both Edge Functions from `functions/`: `set-user-password` (used by the person form) and, if you want
+   other systems to create jobs, `create-job` (see `API.md`). Anyone without an account, or whose status is Inactive, is refused.
+5. Forgot password: an administrator edits the person and sets a new password. (The **Forgot password?**
+   link and **Send reset email** use Supabase's email sender, so they need your own SMTP to be reliable.)
 
 ## What the database enforces
 

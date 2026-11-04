@@ -325,3 +325,70 @@ begin
 end $$;
 revoke all on function public.ra_api_create_job(jsonb, text) from public, anon, authenticated;
 grant execute on function public.ra_api_create_job(jsonb, text) to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Sign-ups are closed once a SYSADMIN exists. Only the very first account (which
+-- becomes the SYSADMIN) can be created through the sign-up screen. After that an
+-- administrator creates accounts from the person form (Edge Function
+-- set-user-password -> ra_admin_set_password), so no confirmation emails are needed.
+-- ---------------------------------------------------------------------------
+create or replace function public.ra_signup_open() returns boolean
+language sql stable security definer set search_path = public as $$
+  select not exists (select 1 from public.docs where coll = 'users' and data->>'role' = 'SYSADMIN')
+$$;
+grant execute on function public.ra_signup_open() to anon, authenticated;
+
+create or replace function public.ra_before_signup() returns trigger
+language plpgsql security definer set search_path = public, extensions as $$
+declare em text := lower(coalesce(new.email,'')); has_admin boolean; nm text;
+begin
+  perform pg_advisory_xact_lock(7770001);
+  select exists (select 1 from public.docs where coll = 'users' and data->>'role' = 'SYSADMIN') into has_admin;
+  nm := coalesce(nullif(new.raw_user_meta_data->>'name',''), split_part(em,'@',1));
+  if not has_admin then
+    if exists (select 1 from public.docs where coll = 'users' and lower(data->>'email') = em) then
+      update public.docs set data = data || '{"role":"SYSADMIN","status":"Active"}'::jsonb
+        where coll = 'users' and lower(data->>'email') = em;
+    else
+      insert into public.docs (path, coll, id, data)
+      select 'users/'||x, 'users', x, jsonb_build_object('id', x, 'name', nm, 'email', em, 'phone', '',
+             'role','SYSADMIN','status','Active','org','','personType','System User')
+      from (select 'u'||substr(encode(gen_random_bytes(8),'hex'),1,10) as x) s;
+    end if;
+  elsif coalesce(current_setting('ra.allow_signup', true), '') <> '1' then
+    raise exception 'Sign-ups are closed. Ask an administrator to create your account.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+create or replace function public.ra_admin_set_password(p_email text, p_password text) returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare em text := lower(btrim(coalesce(p_email,''))); uid uuid;
+begin
+  if em !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then raise exception 'Enter a valid email address' using errcode = 'RA422'; end if;
+  if length(coalesce(p_password,'')) < 10 or length(p_password) > 72 then
+    raise exception 'The password must be between 10 and 72 characters' using errcode = 'RA422'; end if;
+  select id into uid from auth.users where lower(email) = em;
+  if uid is not null then
+    update auth.users set encrypted_password = crypt(p_password, gen_salt('bf')),
+           email_confirmed_at = coalesce(email_confirmed_at, now()), updated_at = now() where id = uid;
+    return jsonb_build_object('created', false);
+  end if;
+  perform set_config('ra.allow_signup', '1', true);
+  uid := gen_random_uuid();
+  insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, recovery_token, email_change_token_new, email_change, email_change_token_current,
+      reauthentication_token, phone_change, phone_change_token)
+  values ('00000000-0000-0000-0000-000000000000', uid, 'authenticated', 'authenticated', em,
+      crypt(p_password, gen_salt('bf')), now(),
+      '{"provider":"email","providers":["email"]}',
+      jsonb_build_object('name', coalesce((select data->>'name' from public.docs where coll = 'users' and lower(data->>'email') = em limit 1), split_part(em,'@',1))),
+      now(), now(), '', '', '', '', '', '', '', '');
+  insert into auth.identities (provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+  values (uid::text, uid, jsonb_build_object('sub', uid::text, 'email', em, 'email_verified', true, 'phone_verified', false),
+      'email', now(), now(), now());
+  return jsonb_build_object('created', true);
+end $$;
+revoke all on function public.ra_admin_set_password(text, text) from public, anon, authenticated;
+grant execute on function public.ra_admin_set_password(text, text) to service_role;
