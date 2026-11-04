@@ -37,7 +37,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 create or replace function public.ra_is_active() returns boolean language sql stable as $$ select public.ra_me() is not null $$;
 create or replace function public.ra_is_admin()  returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'role' = 'SYSADMIN', false) $$;
-create or replace function public.ra_is_agent()  returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'personType' = 'Service Agent', false) $$;
+create or replace function public.ra_is_agent()  returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'personType' = 'Repair Agent', false) $$;
 create or replace function public.ra_my_org()    returns text    language sql stable as $$ select public.ra_me()->>'org' $$;
 create or replace function public.ra_is_sysuser() returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'personType' = 'System User' and public.ra_me()->>'role' <> 'SYSADMIN', false) $$;
 create or replace function public.ra_my_id()     returns text    language sql stable as $$ select public.ra_me()->>'id' $$;
@@ -411,3 +411,6 @@ create policy ra_photos_add on storage.objects for insert to authenticated
 drop policy if exists ra_photos_del on storage.objects;
 create policy ra_photos_del on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and public.ra_is_admin());
+
+-- Person type renamed: Service Agent -> Repair Agent
+update public.docs set data = jsonb_set(data,'{personType}','"Repair Agent"') where coll='users' and data->>'personType'='Service Agent';
