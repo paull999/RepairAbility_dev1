@@ -152,7 +152,7 @@ form{grid-template-columns:minmax(0,1fr)}
   <div class="brand"><svg class="mk" viewBox="0 0 138 130" aria-hidden="true"><path class="l" d="M62 5A57 57 0 0 0 62 119Z"/><path class="o" d="M75 11A57 57 0 0 1 75 125Z"/><rect class="s" x="45" y="59" width="58" height="20" rx="10"/></svg><span>repair<i>ability</i></span></div>
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
-  <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span><br><button class="btn ghost" id="theme" style="margin-top:8px;color:inherit;border-color:rgba(255,255,255,.25)">Switch theme</button></div>
+  <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -185,7 +185,7 @@ const today=day(0);
 let D=null,V={view:'jobs',q:'',agent:'',status:'',sort:'number',dir:1};
 let ME=null,LAST=Date.now(),AMSG='',UORG='',UPT='';
 let VT={};try{VT=JSON.parse(localStorage.getItem('ra_viewtype')||'{}')||{}}catch(e){VT={}}
-const vtKey=()=>V.view==='setup'?'setup:'+V.stab:V.view,vtGet=()=>VT[vtKey()]==='cards'?'cards':'table';
+const vtKey=()=>V.view==='setup'?'setup:'+V.stab:V.view,vtGet=()=>'table';
 /* ---- paging for every list ---- */
 let PSZ=50;try{const v=+localStorage.getItem('ra_pagesize');if([25,50,100,250].includes(v))PSZ=v}catch(e){}
 const PG={},PGS={};
@@ -482,7 +482,7 @@ function applyViewType(){const main=$('#main');if(!main)return;const cards=vtGet
   main.querySelectorAll('.rcards').forEach(x=>x.remove());
   const tabs=[...main.querySelectorAll('.wrap')].filter(w=>w.querySelector('table'));
   const heads=[...main.querySelectorAll('header.top')];
-  const mk=hd=>{if(!hd||hd.querySelector('.vtg'))return;const g=document.createElement('div');g.className='vtg';g.setAttribute('role','group');g.setAttribute('aria-label','View type');g.innerHTML=`<button type="button" data-vt="table" aria-pressed="${!cards}" title="Show as a table">Table</button><button type="button" data-vt="cards" aria-pressed="${cards}" title="Show as cards">Cards</button>`;const add=hd.querySelector('[data-new]');add?hd.insertBefore(g,add):hd.appendChild(g)};
+  const mk=hd=>{return;if(!hd||hd.querySelector('.vtg'))return;const g=document.createElement('div');g.className='vtg';g.setAttribute('role','group');g.setAttribute('aria-label','View type');g.innerHTML=`<button type="button" data-vt="table" aria-pressed="${!cards}" title="Show as a table">Table</button><button type="button" data-vt="cards" aria-pressed="${cards}" title="Show as cards">Cards</button>`;const add=hd.querySelector('[data-new]');add?hd.insertBefore(g,add):hd.appendChild(g)};
   if(jobs){if(!isPhone())mk(heads[0]);return}
   const target=tabs.length?tabs:[...main.querySelectorAll('.empty')].length?[]:[];
   const hd=tabs.length?(()=>{let e=tabs[0].previousElementSibling;while(e&&!(e.matches&&e.matches('header.top')))e=e.previousElementSibling;return e})():heads[heads.length-1];
@@ -971,7 +971,6 @@ document.addEventListener('pointerdown',e=>{const hd=e.target.closest&&e.target.
 document.addEventListener('dblclick',e=>{const hd=e.target.closest&&e.target.closest('.rzh');if(!hd||!ME)return;const t=hd.closest('table');if(ME.colw)delete ME.colw[tblKey(t)];save();render();toast('Column widths reset')});
 matchMedia('(max-width:700px)').addEventListener('change',()=>{if(ME&&V.view==='jobs')render()});
 document.addEventListener('invalid',e=>{const c=e.target.closest&&e.target.closest('[data-tab]');if(c&&c.hidden)showTab(c.dataset.tab)},true);
-$('#theme').onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=dark?'light':'dark'};
 
 /* ================= Supabase data layer and sign-in ================= */
 let SB=null,SBRES=null,RECOV=false;
