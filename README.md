@@ -101,3 +101,10 @@ the channels you use (Project Settings, Edge Functions, Secrets):
 - Text message (Twilio): `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`
 
 Until a channel is set up, the app tells the user the message was not sent and why.
+
+## Address lookup
+
+Typing a full postcode on a job or organisation offers a list of addresses to fill in the address
+fields. This is the `address-lookup` Edge Function (`supabase functions deploy address-lookup`).
+For full street addresses, sign up at getaddress.io and add the secret `GETADDRESS_API_KEY`. Without
+the key the app still fills in the town and county (from the free postcodes.io service).

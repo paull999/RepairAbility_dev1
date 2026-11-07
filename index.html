@@ -510,6 +510,29 @@ function setupTabs(t){const f=$('#frm'),names=Object.keys(t),map={};names.forEac
   bar.innerHTML=names.map((n,i)=>`<button type="button" role="tab" data-tab-btn="${n}" aria-selected="${i===0}"${TABTIP[n]?` title="${TABTIP[n]}"`:''}>${n}</button>`).join('');
   (f.querySelector('h2 + p')||f.querySelector('h2')).after(bar);if(f._inv)f.removeEventListener('invalid',f._inv,true);f._inv=e=>{const t=e.target.closest&&e.target.closest('[data-tab]');if(t&&t.hidden)showTab(t.dataset.tab)};f.addEventListener('invalid',f._inv,true);showTab(names[0])}
 const siteUrl=v=>{v=(v||'').trim();if(!v)return'';if(/^[a-z][a-z0-9+.-]*:/i.test(v))return/^https?:\/\//i.test(v)?v:'';return'https://'+v};
+const PCRE=/^[A-Za-z]{1,2}\d[A-Za-z\d]?\s*\d[A-Za-z]{2}$/;
+async function addrLookup(v){
+  if(window.SB_MODE&&window.SB){const{data,error}=await SB.functions.invoke('address-lookup',{body:{postcode:v}});
+    if(error){let m='The address lookup failed';try{const x=await error.context.json();if(x&&x.error)m=x.error}catch(e){}throw new Error(m)}
+    return(data&&data.addresses)||[]}
+  const raw=v.toUpperCase().replace(/\s+/g,'');let r;try{r=await fetch('https://api.postcodes.io/postcodes/'+encodeURIComponent(raw))}catch(e){throw new Error('Address lookup is not available here')}
+  if(r.status===404)throw new Error('That postcode was not found');if(!r.ok)throw new Error('The postcode service could not be reached');
+  const x=(await r.json()).result||{};return[{line1:'',line2:'',town:x.parish||x.admin_district||'',county:x.admin_county||x.region||'',postcode:raw.slice(0,-3)+' '+raw.slice(-3)}]}
+function initAddr(){const f=$('#frm');if(!f||!f.elements.postcode||!f.elements.addr1)return;const pc=f.elements.postcode,lab=pc.closest('label');if(!lab||lab.querySelector('#addrbox'))return;
+  lab.insertAdjacentHTML('beforeend','<span id="addrbox" style="display:grid;gap:6px;margin-top:6px"><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button type="button" class="btn ghost" id="addrfind" style="padding:4px 10px">Find address</button><span id="addrmsg" style="font-size:12.5px;color:var(--mute);font-weight:400" role="status"></span></span><select class="in" id="addrsel" hidden aria-label="Choose an address"></select></span>');
+  const msg=t=>{$('#addrmsg').textContent=t},sel=$('#addrsel');let list=[],filling=false;
+  const find=async()=>{const v=pc.value.trim();if(!PCRE.test(v)){msg('Enter a full postcode first');sel.hidden=true;return}
+    msg('Looking up…');sel.hidden=true;
+    try{list=await addrLookup(v)}catch(e){msg(e.message||'The lookup failed');return}
+    if(!list.length){msg('No addresses found');return}
+    const area=list.length===1&&!list[0].line1;
+    sel.innerHTML='<option value="">'+(area?'Fill in the town and county':'Select an address ('+list.length+' found)')+'</option>'+list.map((a,i)=>`<option value="${i}">${esc(area?[a.town,a.county].filter(Boolean).join(', '):[a.line1,a.line2,a.town].filter(Boolean).join(', '))}</option>`).join('');
+    sel.hidden=false;msg(area?'Only the town and county are available for this postcode':'')};
+  sel.onchange=()=>{const a=list[+sel.value];if(sel.value===''||!a)return;filling=true;
+    const set=(n,v)=>{const e=f.elements[n];if(e){e.value=v;e.dispatchEvent(new Event('input',{bubbles:true}))}};
+    if(a.line1){set('addr1',a.line1);set('addr2',a.line2)}set('town',a.town);set('county',a.county);set('postcode',a.postcode);filling=false;sel.hidden=true;msg('Address filled in')};
+  $('#addrfind').onclick=find;
+  pc.addEventListener('change',()=>{if(!filling&&PCRE.test(pc.value.trim())&&!f.elements.addr1.value.trim())find()})}
 function syncWeb(){const a=$('#webopen'),i=$('#frm')&&$('#frm').elements.website;if(!a||!i)return;const u=siteUrl(i.value);if(u){a.href=u;a.removeAttribute('aria-disabled');a.style.opacity='';a.style.pointerEvents=''}else{a.removeAttribute('href');a.setAttribute('aria-disabled','true');a.style.opacity='.5';a.style.pointerEvents='none'}}
 function setTabCounts(j){const f=$('#frm');if(!f||!j||!j.id)return;[['Parts',(j.usedParts||[]).length],['Photos',(j.photos||[]).length]].forEach(([n,c])=>{const bt=f.querySelector('[data-tab-btn="'+n+'"]');if(bt)bt.textContent=n+' ('+c+')'})}
 function jrefresh(){const j=jobP(),a=$('#jparts'),b=$('#jphotos');if(!j||(!a&&!b)){render();return}if(a)a.innerHTML=jpartsBody(j);if(b)b.innerHTML=photosBody(j);setTabCounts(j);const pp=$('#pp');if(pp)pp.value=gbpn(jobTotal(j));const tp=$('#tp');if(tp){tp.dataset.parts=jobTotal(j);syncTP()}render()}
@@ -904,7 +927,7 @@ function openForm(type,id){
     
     save();$('#dlg').close();render();toast(`Deleted ${t.label}`)})};
   {const f=$('#frm');if(f.querySelector(':required')){const h=f.querySelector('h2');if(h)h.insertAdjacentHTML('afterend','<p style="grid-column:1/-1;margin:-4px 0 0;font-size:13px;color:var(--mute)">Fields shaded orange are required.</p>')}}
-  if(t.tabs)setupTabs(t.tabs);if(type==='job')setTabCounts(rec);if(type==='org'){initBW(rec);initAG(rec);initJTL(rec);initPC(rec);initOD(rec);syncOT()}syncWeb();syncPT();$('#dlg').showModal();if($('#tplp'))tplPrev();
+  if(t.tabs)setupTabs(t.tabs);if(type==='job')setTabCounts(rec);if(type==='org'){initBW(rec);initAG(rec);initJTL(rec);initPC(rec);initOD(rec);syncOT()}syncWeb();syncPT();initAddr();$('#dlg').showModal();if($('#tplp'))tplPrev();
 }
 document.addEventListener('click',e=>{
   if(e.target.closest&&e.target.closest('.rzh'))return;
