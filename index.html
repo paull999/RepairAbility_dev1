@@ -142,6 +142,15 @@ form{grid-template-columns:minmax(0,1fr)}
 .jbtn{display:flex;gap:8px;margin-top:8px}
 .jbtn .btn{flex:1;padding:10px 6px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+#bkd{width:min(1060px,94vw);max-height:94vh;overflow:auto}
+.wkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.wkbar .btn{padding:4px 10px}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.wkd{font:inherit;color:var(--ink);text-align:left;background:#fff;border:1px solid #d6dde0;border-radius:8px;padding:6px;min-height:118px;display:flex;flex-direction:column;gap:4px;cursor:pointer;overflow:hidden}
+div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f6f5,#f3f6f5 8px,#e8edeb 8px,#e8edeb 16px);color:var(--mute)}
+.wkd.tod .wkh strong{background:var(--acc);color:#fff;border-radius:50%;padding:0 6px}.wkd.sel{outline:3px solid var(--acc);outline-offset:-1px;background:#fff7ee}
+.wkd:not(.off):hover{border-color:var(--acc)}.wkh{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute)}.wkh strong{font-size:15px;color:inherit}
+.wkn{font-size:12px;color:var(--mute)}.wkj{font-size:11.5px;line-height:1.25;background:#e3efec;border-left:3px solid var(--brand);border-radius:4px;padding:3px 5px;overflow:hidden}.wkj.dim{opacity:.55}.wkj span{color:var(--mute)}
+@media(max-width:760px){.wk{grid-template-columns:1fr}.wkd{min-height:0}}
 </style>
 </head>
 <body>
@@ -163,7 +172,7 @@ form{grid-template-columns:minmax(0,1fr)}
 <dialog id="cols"><div id="colsc" style="padding:22px"></div></dialog>
 <dialog id="hd"><div id="hdc" style="padding:22px"></div></dialog>
 <dialog id="jsd"><div id="jsc" style="padding:22px"></div></dialog>
-<dialog id="bkd"><form id="bkc" method="dialog" style="padding:22px;display:grid;grid-template-columns:1fr;gap:12px;min-width:min(440px,90vw)"></form></dialog>
+<dialog id="bkd"><form id="bkc" method="dialog" style="padding:22px;display:grid;grid-template-columns:1fr;gap:12px"></form></dialog>
 <dialog id="imgd"><div style="padding:14px"><img id="imgv" alt="" style="max-width:min(86vw,800px);max-height:78vh;display:block;margin:0 auto"><div style="text-align:right;margin-top:10px"><button type="button" class="btn" id="imgx">Close</button></div></div></dialog>
 <dialog id="cfm"><div style="padding:22px"><h2 style="margin:0 0 14px;font-size:20px" id="cfmt"></h2><div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="cfmn">Cancel</button><button type="button" class="btn danger" id="cfmy">OK</button></div></div></dialog>
 
@@ -525,9 +534,13 @@ function initOD(rec){const w=$('#orgdiary');if(!w)return;const ld=$('#frm').elem
   $('#odrows').onclick=e=>{const b=e.target.closest('[data-oddel]');if(b)b.closest('[data-odrow]').remove()};
   w.oninput=e=>{if(e.target.setCustomValidity)e.target.setCustomValidity('')}}
 function collectOD(){const w=$('#orgdiary');return{days:[...w.querySelectorAll('[data-wd]:checked')].map(c=>+c.dataset.wd),rows:[...w.querySelectorAll('[data-odrow]')].map(r=>({row:r,from:r.querySelector('[data-odf=from]').value,to:r.querySelector('[data-odf=to]').value,note:r.querySelector('[data-odf=note]').value.trim()}))}}
-function orgDayOk(oid,d){const o=orgn(oid);if(!o||!d)return'';
-  if(o.workDays&&o.workDays.length){const dow=new Date(d+'T12:00:00').getDay();if(!o.workDays.includes(dow))return o.name+' does not work on '+DAYF[dow]+'s'}
-  const u=(o.unavail||[]).find(x=>d>=x.from&&d<=x.to);return u?o.name+' is unavailable on '+fmt(d)+(u.note?' ('+u.note+')':''):''}
+const isoAdd=(iso,n)=>{const d=new Date(iso+'T12:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const wkStart=iso=>isoAdd(iso,-((new Date(iso+'T12:00').getDay()+6)%7));
+function orgDayInfo(oid,d){const o=orgn(oid);if(!o||!d)return null;
+  const ld=Math.max(0,Math.min(7,+o.leadDays||0));if(ld&&d<isoAdd(today,ld))return{k:'soon',short:'Too soon',msg:o.name+' needs at least '+ld+' day'+(ld>1?'s':'')+' notice'};
+  if(o.workDays&&o.workDays.length){const dow=new Date(d+'T12:00').getDay();if(!o.workDays.includes(dow))return{k:'off',short:'Not working',msg:o.name+' does not work on '+DAYF[dow]+'s'}}
+  const u=(o.unavail||[]).find(x=>d>=x.from&&d<=x.to);return u?{k:'unavail',short:u.note||'Unavailable',msg:o.name+' is unavailable on '+fmt(d)+(u.note?' ('+u.note+')':'')}:null}
+function orgDayOk(oid,d){const i=orgDayInfo(oid,d);return i?i.msg:''}
 function initBW(rec){const r=$('#bwrows');if(!r)return;const l=bwSorted(rec.bookingWindows||[]);r.innerHTML=l.map(bwRow).join('');syncBW()}
 function syncBW(){const f=$('#frm'),c=f&&f.elements.useDefaultWindows,b=$('#bwbox'),d=$('#bwdef');if(!c||!b||!d)return;const bt=f.elements.bookTo,showW=!bt||bt.value==='Book to a booking window';[c,b].forEach(x=>{const w=x.closest('[data-tab]');if(w)w.style.display=showW?'':'none'});const on=c.checked;b.hidden=on;d.hidden=!on;d.innerHTML=on?`<p style="margin:0 0 8px;color:var(--mute);font-size:13px">This organisation uses the default system booking windows. Change them in Setup.</p>${D.bookingWindows.length?`<ul style="margin:0;padding-left:18px">${bwSorted(D.bookingWindows).map(w=>`<li>${esc(w.description)} \u2013 ${esc(w.start)} to ${esc(w.end)}</li>`).join('')}</ul>`:'<p class="empty">No default booking windows yet.</p>'}`:''}
 function collectBW(){return[...document.querySelectorAll('#bwrows [data-bwrow]')].map(r=>({id:r.dataset.id||uid(),description:r.querySelector('[data-bwf=description]').value.trim(),start:r.querySelector('[data-bwf=start]').value,end:r.querySelector('[data-bwf=end]').value}))}
@@ -860,24 +873,45 @@ function openForm(type,id){
   if($('#bookb'))$('#bookb').onclick=()=>{const F0=$('#frm');if(!F0.elements.status)return;if(isAgentMe()){F0.elements.status.value='Booked';F0.requestSubmit();return}
     const cur=F0.elements.sorg?F0.elements.sorg.value:(rec.sorg||''),curA=F0.elements.agent?F0.elements.agent.value:(rec.agent||''),bd=$('#bkd'),bc=$('#bkc');
     const jtB=D.jobTypes.find(x=>x.id===(F0.elements.jobType?F0.elements.jobType.value:rec.jobType));
-    const orgs=()=>D.orgs.filter(o=>o.orgType==='Servicer'&&(o.status!=='Inactive'||o.id===cur)&&orgCanDo(o.id,jtB)).sort((a,b)=>a.name.localeCompare(b.name));
+    const allOrgs=()=>D.orgs.filter(o=>o.orgType==='Servicer'&&(o.status!=='Inactive'||o.id===cur)).sort((a,b)=>a.name.localeCompare(b.name));
+    const canDo=o=>orgCanDo(o.id,jtB);
     const agOpts=(oid,sel)=>{const l=oid?svcOpts(sel,1,oid).filter(o=>o[0]):[];return l};
-    bc.innerHTML=`<h2 style="margin:0;font-size:20px">Book job${rec.number?' · '+esc(rec.number):''}</h2><p style="margin:0;color:var(--mute)">Choose the servicer, the service agent and the date for this job.</p>
-    <label>Servicer<select class="in" id="bks" required><option value="">${orgs().length?'Select a servicer':'No servicer has an agent with the skills this job needs'}</option>${orgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}>${esc(o.name)}</option>`).join('')}</select></label>
-    <label>Service agent<select class="in" id="bka" required></select></label>
-    <label>Booking date<input class="in" type="date" id="bkdt" required value="${esc(F0.elements.date?F0.elements.date.value:(rec.date||''))}"></label>
-    <label>Booking window<select class="in" id="bkw"></select></label><p id="bkm" style="margin:0;color:var(--urgent);font-weight:600" hidden></p>
+    const startD=F0.elements.date?F0.elements.date.value:(rec.date||'');
+    let ws=wkStart(startD||today);
+    bc.innerHTML=`<h2 style="margin:0;font-size:20px">Book job${rec.number?' · '+esc(rec.number):''}</h2>
+    <label>Servicer<select class="in" id="bks" required><option value="">${allOrgs().length?'Select a servicer':'No servicers are set up'}</option>${allOrgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}${canDo(o)||o.id===cur?'':' disabled'}>${esc(o.name)}${canDo(o)||o.id===cur?'':' (no suitable service agent)'}</option>`).join('')}</select></label>
+    <div id="bkwk" aria-live="polite"></div>
+    <div id="bkfm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+      <label>Service agent<select class="in" id="bka" required></select></label>
+      <label>Booking date<input class="in" type="date" id="bkdt" required value="${esc(startD)}"></label>
+      <label id="bkwl">Booking window<select class="in" id="bkw"></select></label></div>
+    <p id="bkhint" style="margin:0;color:var(--mute);font-size:13px"></p><p id="bkm" style="margin:0;color:var(--urgent);font-weight:600" hidden></p>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="bkx">Cancel</button><button type="submit" class="btn" id="bko">Book job</button></div>`;
     const fill=keep=>{const oid=$('#bks').value,l=agOpts(oid,keep),a=$('#bka');a.innerHTML=`<option value="">${oid?(l.length?'Select a service agent':'No people linked to this servicer'):'Select a servicer first'}</option>`+l.map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');a.disabled=!oid||!l.length;if(keep&&l.some(o=>o[0]===keep))a.value=keep;else if(l.length===1)a.value=l[0][0];$('#bko').disabled=!oid||!l.length};
     const fw=keep=>{const oid=$('#bks').value,w=$('#bkw'),l=oid?bwList(oid).map(bwLabel):[];w.innerHTML=`<option value="">${oid?(l.length?'None':'No booking windows set up'):'Select a servicer first'}</option>`+l.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');w.disabled=!l.length;if(keep&&l.includes(keep))w.value=keep};
+    const mode=()=>{const o=orgn($('#bks').value);return o&&o.bookTo||'Book to a booking window'};
+    const syncMode=()=>{const m=mode(),has=!!$('#bks').value;$('#bkwl').hidden=m!=='Book to a booking window';$('#bkdt').required=m!=='Assign only';
+      $('#bkhint').textContent=!has?'':m==='Assign only'?'This servicer is set to Assign only, so a booking date is optional.':m==='Book to a day'?'This servicer is booked to a day. Pick a day in the diary.':'Pick a day in the diary, then a booking window.'};
+    const drawWk=()=>{const oid=$('#bks').value,o=orgn(oid),sel=$('#bkdt').value,ag=$('#bka').value,box=$('#bkwk');
+      const days=[...Array(7)].map((_,i)=>isoAdd(ws,i)),we=days[6];
+      const lab=new Date(ws+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+new Date(we+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      box.innerHTML=`<div class="wkbar"><strong style="flex:1">${o?esc(o.name)+' · ':''}Week of ${lab}</strong><button type="button" class="btn ghost" data-wk="-7" aria-label="Previous week">‹ Prev</button><button type="button" class="btn ghost" data-wk="0">Today</button><button type="button" class="btn ghost" data-wk="7" aria-label="Next week">Next ›</button></div>
+      <div class="wk">${days.map(d=>{const info=oid?orgDayInfo(oid,d):null,js=oid?D.jobs.filter(j=>j.sorg===oid&&j.date===d&&j.id!==rec.id&&!['Cancelled','Closed'].includes(j.status)).sort((a,b)=>(+a.number||0)-(+b.number||0)):[];
+        const dd=new Date(d+'T12:00');
+        return`<${info||!oid?'div':'button type="button" data-day="'+d+'"'} class="wkd${d===sel?' sel':''}${d===today?' tod':''}${info?' off':''}${!oid?' off':''}" ${d===sel?'aria-pressed="true"':''}><div class="wkh"><span>${dd.toLocaleDateString('en-GB',{weekday:'short'})}</span><strong>${dd.getDate()}</strong></div>${info?`<div class="wkn">${esc(info.short)}</div>`:''}${js.map(j=>{const a=agt(j.agent);return`<div class="wkj${ag&&j.agent&&j.agent!==ag?' dim':''}" title="${esc('#'+j.number+' '+(j.title||''))}"><strong>#${esc(j.number)}</strong> ${esc(j.title||'')}${a?`<br><span>${esc(a.name)}</span>`:''}${j.bookingWindow?`<br><span>${esc(j.bookingWindow)}</span>`:''}</div>`}).join('')}${oid&&!info&&!js.length?'<div class="wkn" style="opacity:.6">Free</div>':''}</${info||!oid?'div':'button'}>`}).join('')}</div>${oid?'':'<p style="margin:8px 0 0;color:var(--mute)">Select a servicer to see their diary.</p>'}`};
+    const setDate=d=>{$('#bkdt').value=d;$('#bkdt').setCustomValidity('');if(d)ws=wkStart(d);drawWk()};
     const curW=F0.elements.bookingWindow?F0.elements.bookingWindow.value:(rec.bookingWindow||'');
-    $('#bkdt').addEventListener('input',()=>$('#bkdt').setCustomValidity(''));fill(curA);fw(curW);$('#bks').onchange=()=>{fill('');fw('')};$('#bkx').onclick=()=>bd.close();
-    bc.onsubmit=e=>{e.preventDefault();const o=$('#bks').value,a=$('#bka').value;if(!o||!a)return;{const why=orgDayOk(o,$('#bkdt').value);if(why){const i=$('#bkdt');i.setCustomValidity(why);i.reportValidity();return}}const fs=F0.elements.sorg,fa=F0.elements.agent;
+    $('#bkdt').addEventListener('input',()=>{$('#bkdt').setCustomValidity('');if($('#bkdt').value)ws=wkStart($('#bkdt').value);drawWk()});
+    bc.querySelector('#bkwk').onclick=e=>{const w=e.target.closest('[data-wk]');if(w){const n=+w.dataset.wk;ws=n===0?wkStart(today):isoAdd(ws,n);drawWk();return}const d=e.target.closest('[data-day]');if(d)setDate(d.dataset.day)};
+    $('#bka').addEventListener('change',drawWk);
+    fill(curA);fw(curW);syncMode();drawWk();
+    $('#bks').onchange=()=>{fill('');fw('');syncMode();drawWk()};$('#bkx').onclick=()=>bd.close();
+    bc.onsubmit=e=>{e.preventDefault();const o=$('#bks').value,a=$('#bka').value;if(!o||!a)return;{const why=$('#bkdt').value?orgDayOk(o,$('#bkdt').value):'';if(why){const i=$('#bkdt');i.setCustomValidity(why);i.reportValidity();return}}const fs=F0.elements.sorg,fa=F0.elements.agent;
       if(fs&&!fs.querySelector('option[value="'+o+'"]'))fs.insertAdjacentHTML('beforeend',`<option value="${esc(o)}">${esc(orgn(o)?.name||'')}</option>`);
       if(fs){fs.value=o;fs.dispatchEvent(new Event('change',{bubbles:true}))}
       if(fa){if(!fa.querySelector('option[value="'+a+'"]'))fa.insertAdjacentHTML('beforeend',`<option value="${esc(a)}">${esc(agt(a)?.name||'')}</option>`);fa.disabled=false;fa.value=a}
-      {const fb=F0.elements.bookingWindow,wv=$('#bkw').value;if(fb){if(wv&&!fb.querySelector('option[value="'+wv.replace(/"/g,'\\"')+'"]'))fb.insertAdjacentHTML('beforeend',`<option value="${esc(wv)}">${esc(wv)}</option>`);fb.value=wv}}
-      {const fd=F0.elements.date,dv=$('#bkdt').value;if(!dv)return;if(fd){fd.value=dv;fd.dispatchEvent(new Event('change',{bubbles:true}))}else F0.insertAdjacentHTML('beforeend',`<input type="hidden" name="date" value="${esc(dv)}">`)}F0.elements.status.value='Booked';BOOKKEEP=1;bd.close();F0.requestSubmit()};
+      {const fb=F0.elements.bookingWindow,wv=mode()==='Book to a booking window'?$('#bkw').value:'';if(fb){if(wv&&!fb.querySelector('option[value="'+wv.replace(/"/g,'\\"')+'"]'))fb.insertAdjacentHTML('beforeend',`<option value="${esc(wv)}">${esc(wv)}</option>`);fb.value=wv}}
+      {const fd=F0.elements.date,dv=$('#bkdt').value;if(!dv&&mode()!=='Assign only')return;if(fd){fd.value=dv;fd.dispatchEvent(new Event('change',{bubbles:true}))}else if(dv)F0.insertAdjacentHTML('beforeend',`<input type="hidden" name="date" value="${esc(dv)}">`)}F0.elements.status.value='Booked';BOOKKEEP=1;bd.close();F0.requestSubmit()};
     bd.showModal()};
   if(id&&type==='job'&&$('#jsbtn'))$('#jsbtn').onclick=()=>openSheet(id);
   if(id&&type==='job'&&$('#hbtn'))$('#hbtn').onclick=()=>openHist(id);
