@@ -868,6 +868,7 @@ function openForm(type,id){
     f.querySelector('h2').insertAdjacentHTML('afterend',`<p id="lockmsg" style="grid-column:1/-1;margin:0;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--mute) 14%,var(--panel));font-weight:600">${LOCKED?'This job is '+esc(st)+', so only its status can be changed. Change the status to another value to edit the job again.':'With a status of '+esc(st)+' the job becomes read-only once saved. Only the status can be changed.'}</p>`)};
   if(type==='job'){lockForm(LST.includes(rec.status||(($('#frm').elements.status||{}).value)));$('#frm').onchange=e=>{if(e.target.name==='revisit')syncRev();if(e.target.name==='status'){const on=LST.includes(e.target.value);lockForm(on);const bk=$('#bookb');if(bk)bk.hidden=NOBOOK.includes(e.target.value)}}}
   if(type==='job'){const sg=$('#frm').elements.sorg;if(sg){sg.disabled=true;sg.setAttribute('data-ro','1');sg.title='Use Book job to assign or change the servicer'}}
+  if(type==='job'){const bw=$('#frm').elements.bookingWindow;if(bw){bw.disabled=true;bw.setAttribute('data-ro','1');bw.title='Use Book job to set or change the booking window'}}
   if(type==='job'&&id){const og=$('#frm').elements.org;if(og){og.disabled=true;og.setAttribute('data-ro','1');og.title='The organisation can\u2019t be changed once the job has been created'}}
   if(type==='org'){initUC(rec);initINS(rec)}
   $('#frm').oninput=e=>e.target.setCustomValidity&&e.target.setCustomValidity('');
