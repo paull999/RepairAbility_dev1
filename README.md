@@ -68,7 +68,7 @@ You get an `https://` address. Put that address into Supabase's Site URL (step 1
 
 - **System administrators**: everything.
 - **Service agents**: can only see jobs assigned to them, can only update those jobs, and can
-  never change the locked fields (title, job type, address, customer details, price, priority,
+  never change the locked fields (title, job type, address, customer details, price,
   duration, booking window, servicer, assigned agent, organisation). They cannot create or delete jobs.
 - **Other people**: can see and create/edit jobs, but cannot delete a job or change a job's
   organisation, and cannot change people, organisations or setup data.

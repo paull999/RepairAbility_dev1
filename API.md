@@ -22,7 +22,6 @@ Deploy the function with `supabase functions deploy create-job --no-verify-jwt`.
 | `addr1` | yes | Address line 1 |
 | `postcode` | yes | A valid UK postcode; stored in standard form (`SW1A 1AA`) |
 | `extRef` | no | Your own reference. Sending the same `extRef` again for the same organisation returns the existing job instead of creating another |
-| `priority` | no | Must match a priority in System Setup. Defaults to Normal |
 | `custEmail`, `custPhone`, `addr2`, `town`, `county`, `notes`, `minutes` | no | `minutes` defaults from the job type |
 
 The job is created with status **New**, the next job number, and the job limit and basis

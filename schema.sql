@@ -133,7 +133,7 @@ create policy docs_delete on public.docs for delete to authenticated using (publ
 create or replace function public.ra_guard_jobs() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare k text; locked text[] := array['bookingWindow','title','jobType','addr1','addr2','town','county','postcode',
-                                         'sorg','agent','priority','minutes','jobPrice','custName','custEmail','custPhone','org'];
+                                         'sorg','agent','minutes','jobPrice','custName','custEmail','custPhone','org'];
 begin
   if new.coll <> 'jobs' or public.ra_is_admin() then return new; end if;
   if tg_op = 'UPDATE' then
@@ -280,15 +280,6 @@ begin
     raise exception 'postcode is not a valid UK postcode' using errcode = 'RA422'; end if;
   pc := left(pc, length(pc) - 3) || ' ' || right(pc, 3);
 
-  if coalesce(p->>'priority','') <> '' then
-    select data->>'description' into pri from public.docs where coll = 'priorities'
-      and lower(data->>'description') = lower(btrim(p->>'priority')) limit 1;
-    if pri is null then raise exception 'priority does not match a priority set up in the system' using errcode = 'RA422'; end if;
-  else
-    select coalesce((select data->>'description' from public.docs where coll = 'priorities' and data->>'description' = 'Normal' limit 1),
-                    (select data->>'description' from public.docs where coll = 'priorities' order by path limit 1), '') into pri;
-  end if;
-
   -- Same extRef for the same organisation: return the job already created.
   if ext <> '' then
     select data into ex from public.docs where coll = 'jobs' and data->>'org' = org->>'id' and data->>'extRef' = ext limit 1;
@@ -309,7 +300,7 @@ begin
   num := public.ra_next_job_number();
   jid := 'x' || substr(encode(gen_random_bytes(8), 'hex'), 1, 10);
   j := jsonb_build_object(
-    'id', jid, 'number', num, 'title', ttl, 'extRef', ext, 'status', 'New', 'priority', pri,
+    'id', jid, 'number', num, 'title', ttl, 'extRef', ext, 'status', 'New',
     'org', org->>'id', 'jobType', jt->>'id', 'sorg', '', 'agent', '', 'date', '', 'bookingWindow', '',
     'minutes', to_jsonb(mins),
     'custName', cn, 'custEmail', em, 'custPhone', btrim(coalesce(p->>'custPhone','')),
