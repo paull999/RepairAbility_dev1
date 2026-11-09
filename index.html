@@ -915,7 +915,7 @@ function openForm(type,id){
       <label id="bkdl">Booking date<input class="in" type="date" id="bkdt" required value="${esc(startD)}"></label>
       <label id="bkwl">Booking window<select class="in" id="bkw"></select></label></div>
     <p id="bkhint" style="margin:0;color:var(--mute);font-size:13px"></p></div><p id="bkm" style="margin:0;color:var(--urgent);font-weight:600" hidden></p>
-    <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="bkx">Cancel</button><button type="submit" class="btn" id="bko">Book job</button></div>`;
+    <div style="display:flex;gap:10px;justify-content:flex-end">${cur||startD?'<button type="button" class="btn danger" id="bkdel" style="margin-right:auto">Delete booking</button>':''}<button type="button" class="btn ghost" id="bkx">Cancel</button><button type="submit" class="btn" id="bko">Book job</button></div>`;
     const gate=()=>{$('#bko').disabled=!$('#bks').value};
     const fw=keep=>{const oid=$('#bks').value,w=$('#bkw'),l=oid?bwList(oid).map(bwLabel):[];w.innerHTML=`<option value="">${oid?(l.length?'None':'No booking windows set up'):'Select a servicer first'}</option>`+l.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');w.disabled=!l.length;if(keep&&l.includes(keep))w.value=keep};
     const mode=()=>{const o=orgn($('#bks').value);return o&&o.bookTo||'Book to a booking window'};
@@ -958,6 +958,11 @@ function openForm(type,id){
     bc.addEventListener('invalid',e=>{if(e.target.closest('#bkp-dia')&&$('#bkp-dia').hidden){showBt('dia');const t=e.target;setTimeout(()=>t.reportValidity(),0)}},true);
     fw(curW);syncMode();drawWk();
     $('#bks').onchange=()=>{clearSg();fw('');syncMode();drawWk()};$('#bkx').onclick=()=>bd.close();
+    if($('#bkdel'))$('#bkdel').onclick=async()=>{if(!await ask('Delete this booking? The scheduled date, assigned servicer and booking window will be cleared and the job set back to New.','Delete booking'))return;
+      const fs=F0.elements.sorg;if(fs){fs.value='';fs.dispatchEvent(new Event('change',{bubbles:true}))}
+      ['bookingWindow','date'].forEach(n=>{const el=F0.elements[n];if(el)el.value=''});
+      if(F0.elements.status)F0.elements.status.value='New';
+      BOOKKEEP=1;bd.close();F0.requestSubmit()};
     bc.onsubmit=e=>{e.preventDefault();const o=$('#bks').value;if(!o)return;{const why=mode()!=='Assign only'&&$('#bkdt').value?orgDayOk(o,$('#bkdt').value):'';if(why){const i=$('#bkdt');i.setCustomValidity(why);i.reportValidity();return}}const fs=F0.elements.sorg,fa=F0.elements.agent,keepA=((fa&&fa.value)||rec.agent||'');
       if(fs&&!fs.querySelector('option[value="'+o+'"]'))fs.insertAdjacentHTML('beforeend',`<option value="${esc(o)}">${esc(orgn(o)?.name||'')}</option>`);
       if(fs){fs.value=o;fs.dispatchEvent(new Event('change',{bubbles:true}))}
