@@ -143,14 +143,16 @@ form{grid-template-columns:minmax(0,1fr)}
 .jbtn .btn{flex:1;padding:10px 6px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 #bkd{width:min(1060px,94vw);max-height:94vh;overflow:auto}
+#bkc>div:last-child{position:sticky;bottom:-22px;background:var(--panel);padding:10px 0 0;margin-bottom:-12px;border-top:1px solid var(--line)}
 .wkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.wkbar .btn{padding:4px 10px}
 .wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
-.wkd{font:inherit;color:var(--ink);text-align:left;background:#fff;border:1px solid #d6dde0;border-radius:8px;padding:6px;min-height:118px;display:flex;flex-direction:column;gap:4px;cursor:pointer;overflow:hidden}
+.wkhd{margin-bottom:4px;font-size:12px;font-weight:700;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}.wkhd span{padding:0 6px}.wkdn{display:none}.wkd.oth{opacity:.55}
+.wkd{font:inherit;color:var(--ink);text-align:left;background:#fff;border:1px solid #d6dde0;border-radius:8px;padding:6px;min-height:72px;display:flex;flex-direction:column;gap:4px;cursor:pointer;overflow:hidden}
 div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f6f5,#f3f6f5 8px,#e8edeb 8px,#e8edeb 16px);color:var(--mute)}
 .wkd.tod .wkh strong{background:var(--acc);color:#fff;border-radius:50%;padding:0 6px}.wkd.sel{outline:3px solid var(--acc);outline-offset:-1px;background:#fff7ee}
 .wkd:not(.off):hover{border-color:var(--acc)}.wkh{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute)}.wkh strong{font-size:15px;color:inherit}
 .wkn{font-size:12px;color:var(--mute)}.wkj{font-size:11.5px;line-height:1.25;background:#e3efec;border-left:3px solid var(--brand);border-radius:4px;padding:3px 5px;overflow:hidden}.wkj.dim{opacity:.55}.wkj span{color:var(--mute)}
-@media(max-width:760px){.wk{grid-template-columns:1fr}.wkd{min-height:0}}
+@media(max-width:760px){.wk{grid-template-columns:1fr}.wkhd{display:none}.wkd{min-height:0}.wkd.oth{display:none}.wkdn{display:inline}}
 </style>
 </head>
 <body>
@@ -876,7 +878,7 @@ function openForm(type,id){
     const allOrgs=()=>D.orgs.filter(o=>o.orgType==='Servicer'&&(o.status!=='Inactive'||o.id===cur)).sort((a,b)=>a.name.localeCompare(b.name));
     const canDo=o=>orgCanDo(o.id,jtB);
     const startD=F0.elements.date?F0.elements.date.value:(rec.date||'');
-    let ws=wkStart(startD||today);
+    let ms=(startD||today).slice(0,7)+'-01';
     bc.innerHTML=`<h2 style="margin:0;font-size:20px">Book job${rec.number?' · '+esc(rec.number):''}</h2>
     <label>Servicer<select class="in" id="bks" required><option value="">${allOrgs().length?'Select a servicer':'No servicers are set up'}</option>${allOrgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}${canDo(o)||o.id===cur?'':' disabled'}>${esc(o.name)}${canDo(o)||o.id===cur?'':' (no suitable service agent)'}</option>`).join('')}</select></label>
     <div id="bkwk" aria-live="polite"></div>
@@ -891,16 +893,17 @@ function openForm(type,id){
     const syncMode=()=>{const m=mode(),has=!!$('#bks').value;$('#bkwk').hidden=m==='Assign only';$('#bkdl').hidden=m==='Assign only';$('#bkwl').hidden=m!=='Book to a booking window';$('#bkdt').required=m!=='Assign only';gate();
       $('#bkhint').textContent=!has?'':m==='Assign only'?'This servicer is set to Assign only, so the job is assigned without a date.':m==='Book to a day'?'Pick a day in the diary.':'Pick a day in the diary, then a booking window.'};
     const drawWk=()=>{const oid=$('#bks').value,o=orgn(oid),sel=$('#bkdt').value,ag=curA,box=$('#bkwk');
-      const days=[...Array(7)].map((_,i)=>isoAdd(ws,i)),we=days[6];
-      const lab=new Date(ws+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+new Date(we+'T12:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-      box.innerHTML=`<div class="wkbar"><strong style="flex:1">${o?esc(o.name)+' · ':''}Week of ${lab}</strong><button type="button" class="btn ghost" data-wk="-7" aria-label="Previous week">‹ Prev</button><button type="button" class="btn ghost" data-wk="0">Today</button><button type="button" class="btn ghost" data-wk="7" aria-label="Next week">Next ›</button></div>
-      <div class="wk">${days.map(d=>{const info=oid?orgDayInfo(oid,d):null,js=oid?D.jobs.filter(j=>j.sorg===oid&&j.date===d&&j.id!==rec.id&&!['Cancelled','Closed'].includes(j.status)).sort((a,b)=>(+a.number||0)-(+b.number||0)):[];
-        const dd=new Date(d+'T12:00');
-        return`<${info||!oid?'div':'button type="button" data-day="'+d+'"'} class="wkd${d===sel?' sel':''}${d===today?' tod':''}${info?' off':''}${!oid?' off':''}" ${d===sel?'aria-pressed="true"':''}><div class="wkh"><span>${dd.toLocaleDateString('en-GB',{weekday:'short'})}</span><strong>${dd.getDate()}</strong></div>${info?`<div class="wkn">${esc(info.short)}</div>`:''}${js.map(j=>{const a=agt(j.agent);return`<div class="wkj${ag&&j.agent&&j.agent!==ag?' dim':''}" title="${esc('#'+j.number+' '+(j.title||''))}"><strong>#${esc(j.number)}</strong> ${esc(j.title||'')}${a?`<br><span>${esc(a.name)}</span>`:''}${j.bookingWindow?`<br><span>${esc(j.bookingWindow)}</span>`:''}</div>`}).join('')}${oid&&!info&&!js.length?'<div class="wkn" style="opacity:.6">Free</div>':''}</${info||!oid?'div':'button'}>`}).join('')}</div>${oid?'':'<p style="margin:8px 0 0;color:var(--mute)">Select a servicer to see their diary.</p>'}`};
-    const setDate=d=>{$('#bkdt').value=d;$('#bkdt').setCustomValidity('');if(d)ws=wkStart(d);drawWk()};
+      const nx=(()=>{const d=new Date(ms+'T12:00');d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,7)+'-01'})(),last=isoAdd(nx,-1),st=wkStart(ms),n=Math.ceil((new Date(wkStart(last)+'T12:00')-new Date(st+'T12:00'))/864e5/7+1)*7;
+      const days=[...Array(n)].map((_,i)=>isoAdd(st,i)),lab=new Date(ms+'T12:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+      box.innerHTML=`<div class="wkbar"><strong style="flex:1">${o?esc(o.name)+' · ':''}${lab}</strong><button type="button" class="btn ghost" data-wk="-1" aria-label="Previous month">‹ Prev</button><button type="button" class="btn ghost" data-wk="0">Today</button><button type="button" class="btn ghost" data-wk="1" aria-label="Next month">Next ›</button></div>
+      <div class="wk wkhd">${days.slice(0,7).map(d=>`<span>${new Date(d+'T12:00').toLocaleDateString('en-GB',{weekday:'short'})}</span>`).join('')}</div>
+      <div class="wk">${days.map(d=>{const inM=d.slice(0,7)===ms.slice(0,7),info=oid?orgDayInfo(oid,d):null,js=oid?D.jobs.filter(j=>j.sorg===oid&&j.date===d&&j.id!==rec.id&&!['Cancelled','Closed'].includes(j.status)).sort((a,b)=>(+a.number||0)-(+b.number||0)):[];
+        const dd=new Date(d+'T12:00'),tag=info||!oid?'div':'button type="button" data-day="'+d+'"',cl='wkd'+(d===sel?' sel':'')+(d===today?' tod':'')+(info||!oid?' off':'')+(inM?'':' oth');
+        return`<${tag} data-date="${d}" class="${cl}" ${d===sel?'aria-pressed="true"':''} aria-label="${esc(dd.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}))}"><div class="wkh"><span class="wkdn">${dd.toLocaleDateString('en-GB',{weekday:'short'})}</span><strong>${dd.getDate()}</strong></div>${info?`<div class="wkn">${esc(info.short)}</div>`:''}${js.slice(0,3).map(j=>{const a=agt(j.agent);return`<div class="wkj${ag&&j.agent&&j.agent!==ag?' dim':''}" title="${esc('#'+j.number+' '+(j.title||'')+(a?' · '+a.name:'')+(j.bookingWindow?' · '+j.bookingWindow:''))}"><strong>#${esc(j.number)}</strong> ${esc(j.title||'')}</div>`}).join('')}${js.length>3?`<div class="wkn">+${js.length-3} more</div>`:''}${oid&&!info&&!js.length&&inM?'<div class="wkn" style="opacity:.6">Free</div>':''}</${tag.split(' ')[0]}>`}).join('')}</div>${oid?'':'<p style="margin:8px 0 0;color:var(--mute)">Select a servicer to see their diary.</p>'}`};
+    const setDate=d=>{$('#bkdt').value=d;$('#bkdt').setCustomValidity('');if(d)ms=d.slice(0,7)+'-01';drawWk()};
     const curW=F0.elements.bookingWindow?F0.elements.bookingWindow.value:(rec.bookingWindow||'');
-    $('#bkdt').addEventListener('input',()=>{$('#bkdt').setCustomValidity('');if($('#bkdt').value)ws=wkStart($('#bkdt').value);drawWk()});
-    bc.querySelector('#bkwk').onclick=e=>{const w=e.target.closest('[data-wk]');if(w){const n=+w.dataset.wk;ws=n===0?wkStart(today):isoAdd(ws,n);drawWk();return}const d=e.target.closest('[data-day]');if(d)setDate(d.dataset.day)};
+    $('#bkdt').addEventListener('input',()=>{$('#bkdt').setCustomValidity('');if($('#bkdt').value)ms=$('#bkdt').value.slice(0,7)+'-01';drawWk()});
+    bc.querySelector('#bkwk').onclick=e=>{const w=e.target.closest('[data-wk]');if(w){const n=+w.dataset.wk;if(n===0)ms=today.slice(0,7)+'-01';else{const d=new Date(ms+'T12:00');d.setMonth(d.getMonth()+n);ms=d.toISOString().slice(0,7)+'-01'}drawWk();return}const d=e.target.closest('[data-day]');if(d)setDate(d.dataset.day)};
     fw(curW);syncMode();drawWk();
     $('#bks').onchange=()=>{fw('');syncMode();drawWk()};$('#bkx').onclick=()=>bd.close();
     bc.onsubmit=e=>{e.preventDefault();const o=$('#bks').value;if(!o)return;{const why=mode()!=='Assign only'&&$('#bkdt').value?orgDayOk(o,$('#bkdt').value):'';if(why){const i=$('#bkdt');i.setCustomValidity(why);i.reportValidity();return}}const fs=F0.elements.sorg,fa=F0.elements.agent,keepA=((fa&&fa.value)||rec.agent||'');
