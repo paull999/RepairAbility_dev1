@@ -876,14 +876,14 @@ function openForm(type,id){
     if(type==='job'){const j=id?rec:D.jobs[D.jobs.length-1];if(j.agent&&j.agent!==prevA)previewMsgs(j.id)}};
   $('#cancel').onclick=()=>$('#dlg').close();
   if($('#bookb'))$('#bookb').onclick=()=>{const F0=$('#frm');if(!F0.elements.status)return;if(isAgentMe()){F0.elements.status.value='Booked';F0.requestSubmit();return}
-    const cur=F0.elements.sorg?F0.elements.sorg.value:(rec.sorg||''),curA=F0.elements.agent?F0.elements.agent.value:(rec.agent||''),bd=$('#bkd'),bc=$('#bkc');
+    const cur=(F0.elements.sorg&&F0.elements.sorg.value)||rec.sorg||'',curA=(F0.elements.agent&&F0.elements.agent.value)||rec.agent||'',bd=$('#bkd'),bc=$('#bkc');
     const jtB=D.jobTypes.find(x=>x.id===(F0.elements.jobType?F0.elements.jobType.value:rec.jobType));
     const allOrgs=()=>D.orgs.filter(o=>o.orgType==='Servicer'&&(o.status!=='Inactive'||o.id===cur)).sort((a,b)=>a.name.localeCompare(b.name));
     const canDo=o=>orgCanDo(o.id,jtB);
     const startD=F0.elements.date?F0.elements.date.value:(rec.date||'');
     let ms=(startD||today).slice(0,7)+'-01';
     bc.innerHTML=`<h2 style="margin:0;font-size:20px">Book job${rec.number?' · '+esc(rec.number):''}</h2>
-    <label>Servicer<select class="in" id="bks" required><option value="">${allOrgs().length?'Select a servicer':'No servicers are set up'}</option>${allOrgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}${canDo(o)||o.id===cur?'':' disabled'}>${esc(o.name)}${canDo(o)||o.id===cur?'':' (no suitable service agent)'}</option>`).join('')}</select></label>
+    <label>Servicer<select class="in" id="bks" required><option value=""${cur?'':' selected'}>${allOrgs().length?'Select a servicer':'No servicers are set up'}</option>${allOrgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}${canDo(o)||o.id===cur?'':' disabled'}>${esc(o.name)}${canDo(o)||o.id===cur?'':' (no suitable service agent)'}</option>`).join('')}</select></label>
     <div id="bkwk" aria-live="polite"></div>
     <div id="bkfm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
       <label id="bkdl">Booking date<input class="in" type="date" id="bkdt" required value="${esc(startD)}"></label>
