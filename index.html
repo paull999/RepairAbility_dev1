@@ -144,7 +144,7 @@ form{grid-template-columns:minmax(0,1fr)}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 #bkd{width:min(1060px,94vw);max-height:94vh;overflow:auto}
 #bkc>div:last-child{position:sticky;bottom:-22px;background:var(--panel);padding:10px 0 0;margin-bottom:-12px;border-top:1px solid var(--line)}
-#bkcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}.svc{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);cursor:pointer;font:inherit}.svl{height:34px;max-width:120px;object-fit:contain;object-position:left;margin-bottom:4px}.svc span{font-size:13px;color:var(--mute)}.svc:hover{border-color:var(--acc)}.svc.on{border:2px solid var(--brand);padding:11px 13px;background:color-mix(in srgb,var(--brand) 8%,var(--panel))}
+#bkp-dia:not([hidden]){display:grid;gap:12px}#bkp-opt:not([hidden]){display:block}#bkcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}.svc{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);color:var(--ink);cursor:pointer;font:inherit}.svl{height:34px;max-width:120px;object-fit:contain;object-position:left;margin-bottom:4px}.svc span{font-size:13px;color:var(--mute)}.svc:hover{border-color:var(--acc)}.svc.on{border:2px solid var(--brand);padding:11px 13px;background:color-mix(in srgb,var(--brand) 8%,var(--panel))}
 .sgbox{max-height:210px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:6px}.sgt{width:100%;border-collapse:collapse;font-size:14px}.sgt th{position:sticky;top:0;background:var(--panel);text-align:left;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;padding:6px 10px;border-bottom:1px solid var(--line)}.sgt td{padding:7px 10px;border-bottom:1px solid #eef2f0}.sgt tr[data-sg]{cursor:pointer}.sgt tr[data-sg]:hover{background:#f3f6f5}.sgt tr.sgon{background:#fff7ee;box-shadow:inset 3px 0 0 var(--acc)}.sgt td:first-child{width:28px}
 .wkbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.wkbar .btn{padding:4px 10px}
 .wk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
@@ -908,12 +908,13 @@ function openForm(type,id){
     let ms=(startD||today).slice(0,7)+'-01';
     bc.innerHTML=`<h2 style="margin:0;font-size:20px">Book job${rec.number?' · '+esc(rec.number):''}</h2>
     <div id="bkcards" role="group" aria-label="Available servicers"></div>
-    <div id="bksug"></div><select id="bks" hidden aria-hidden="true" tabindex="-1"><option value=""${cur?'':' selected'}>${allOrgs().length?'Select a servicer':'No servicers are set up'}</option>${allOrgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}${canDo(o)||o.id===cur?'':' disabled'}>${esc(o.name)}${canDo(o)||o.id===cur?'':(orgCovers(o,jpc)?' (not available)':' (does not cover this postcode)')}</option>`).join('')}</select>
-    <div id="bkwk" aria-live="polite"></div>
+    <div class="tabs" role="tablist" id="bktabs"><button type="button" role="tab" data-bt="opt" aria-selected="true">Options</button><button type="button" role="tab" data-bt="dia" aria-selected="false">Diary</button></div>
+    <div id="bkp-opt"><div id="bksug"></div></div><select id="bks" hidden aria-hidden="true" tabindex="-1"><option value=""${cur?'':' selected'}>${allOrgs().length?'Select a servicer':'No servicers are set up'}</option>${allOrgs().map(o=>`<option value="${esc(o.id)}"${o.id===cur?' selected':''}${canDo(o)||o.id===cur?'':' disabled'}>${esc(o.name)}${canDo(o)||o.id===cur?'':(orgCovers(o,jpc)?' (not available)':' (does not cover this postcode)')}</option>`).join('')}</select>
+    <div id="bkp-dia" hidden><div id="bkwk" aria-live="polite"></div>
     <div id="bkfm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
       <label id="bkdl">Booking date<input class="in" type="date" id="bkdt" required value="${esc(startD)}"></label>
       <label id="bkwl">Booking window<select class="in" id="bkw"></select></label></div>
-    <p id="bkhint" style="margin:0;color:var(--mute);font-size:13px"></p><p id="bkm" style="margin:0;color:var(--urgent);font-weight:600" hidden></p>
+    <p id="bkhint" style="margin:0;color:var(--mute);font-size:13px"></p></div><p id="bkm" style="margin:0;color:var(--urgent);font-weight:600" hidden></p>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="bkx">Cancel</button><button type="submit" class="btn" id="bko">Book job</button></div>`;
     const gate=()=>{$('#bko').disabled=!$('#bks').value};
     const fw=keep=>{const oid=$('#bks').value,w=$('#bkw'),l=oid?bwList(oid).map(bwLabel):[];w.innerHTML=`<option value="">${oid?(l.length?'None':'No booking windows set up'):'Select a servicer first'}</option>`+l.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');w.disabled=!l.length;if(keep&&l.includes(keep))w.value=keep};
@@ -952,6 +953,9 @@ function openForm(type,id){
     bc.querySelector('#bksug').onchange=e=>{const r=SG[+e.target.value];if(!r)return;SELI=+e.target.value;bc.querySelectorAll('tr[data-sg]').forEach(t=>t.classList.toggle('sgon',t.dataset.sg===e.target.value));
       $('#bks').value=r.o.id;fw('');syncMode();if(r.d)setDate(r.d);else{$('#bkdt').value='';drawWk()}if(r.w)$('#bkw').value=r.w};
     bc.querySelector('#bksug').onclick=e=>{const t=e.target.closest('tr[data-sg]');if(t&&e.target.tagName!=='INPUT'){const i=t.querySelector('input');i.checked=true;i.dispatchEvent(new Event('change',{bubbles:true}))}};
+    const showBt=k=>{bc.querySelectorAll('[data-bt]').forEach(b=>b.setAttribute('aria-selected',b.dataset.bt===k));$('#bkp-opt').hidden=k!=='opt';$('#bkp-dia').hidden=k!=='dia'};
+    $('#bktabs').onclick=e=>{const b=e.target.closest('[data-bt]');if(b)showBt(b.dataset.bt)};
+    bc.addEventListener('invalid',e=>{if(e.target.closest('#bkp-dia')&&$('#bkp-dia').hidden){showBt('dia');const t=e.target;setTimeout(()=>t.reportValidity(),0)}},true);
     fw(curW);syncMode();drawWk();
     $('#bks').onchange=()=>{clearSg();fw('');syncMode();drawWk()};$('#bkx').onclick=()=>bd.close();
     bc.onsubmit=e=>{e.preventDefault();const o=$('#bks').value;if(!o)return;{const why=mode()!=='Assign only'&&$('#bkdt').value?orgDayOk(o,$('#bkdt').value):'';if(why){const i=$('#bkdt');i.setCustomValidity(why);i.reportValidity();return}}const fs=F0.elements.sorg,fa=F0.elements.agent,keepA=((fa&&fa.value)||rec.agent||'');
