@@ -882,7 +882,19 @@ function openForm(type,id){
     if(!on)return;
     f.querySelectorAll('input,select,textarea,button').forEach(el=>{if(el.disabled||keep.has(el.id)||el.hasAttribute('data-tab-btn')||el.name==='status'||el.type==='submit')return;el.disabled=true;el.setAttribute('data-lk','1')});
     f.querySelector('h2').insertAdjacentHTML('afterend',`<p id="lockmsg" style="grid-column:1/-1;margin:0;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--mute) 14%,var(--panel));font-weight:600">${LOCKED?'This job is '+esc(st)+', so only its status can be changed. Change the status to another value to edit the job again.':'With a status of '+esc(st)+' the job becomes read-only once saved. Only the status can be changed.'}</p>`)};
-  if(type==='job'){lockForm(LST.includes(rec.status||(($('#frm').elements.status||{}).value)));$('#frm').onchange=e=>{if(e.target.name==='revisit')syncRev();if(e.target.name==='status'){const on=LST.includes(e.target.value);lockForm(on);const bk=$('#bookb');if(bk)bk.hidden=NOBOOK.includes(e.target.value)}}}
+  if(type==='job'){lockForm(LST.includes(rec.status||(($('#frm').elements.status||{}).value)));const syncBk=()=>{const bk=$('#bookb'),F=$('#frm');if(!bk)return;const no=[...F.querySelectorAll('[required]')].some(x=>!String(x.value||'').trim());bk.disabled=isAgentMe()||no;bk.title=isAgentMe()?'Service agents cannot book jobs':no?'Complete all mandatory fields before booking':''};
+    if(type==='job')syncBk();
+    if(type==='job')$('#frm').addEventListener('input',()=>syncBk());
+    $('#frm').onchange=e=>{if(e.target.name==='revisit')syncRev();if(e.target.name==='status'){const on=LST.includes(e.target.value);lockForm(on);const bk=$('#bookb');if(bk)bk.hidden=NOBOOK.includes(e.target.value);syncBk()}
+      if(type==='job')syncBk();
+      if(type==='job'&&id&&(e.target.name==='jobType'||e.target.name==='postcode')){const F=$('#frm'),g=n=>F.elements[n]?F.elements[n].value:'',nz=v=>String(v||'').toUpperCase().replace(/\s+/g,'');
+        const changed=e.target.name==='jobType'?e.target.value!==(rec.jobType||''):nz(e.target.value)!==nz(rec.postcode);
+        if(changed&&(g('date')||g('sorg')||g('bookingWindow'))){const nm=e.target.name,el=e.target;
+          ask('Changing the '+(nm==='jobType'?'job type (skill)':'postcode')+' will delete the existing booking, and a new booking will need to be made. Do you want to continue?','Continue').then(okc=>{
+            if(!okc){el.value=nm==='jobType'?(rec.jobType||''):(rec.postcode||'');syncBk();return}
+            const fs=F.elements.sorg;if(fs){fs.value='';fs.dispatchEvent(new Event('change',{bubbles:true}))}
+            ['bookingWindow','date','agent'].forEach(n=>{const x=F.elements[n];if(x)x.value=''});
+            if(F.elements.status)F.elements.status.value='New';syncBk()})}}}}
   if(type==='job'){const sg=$('#frm').elements.sorg;if(sg){sg.disabled=true;sg.setAttribute('data-ro','1');sg.title='Use Book job to assign or change the servicer'}}
   if(type==='job'){const bw=$('#frm').elements.bookingWindow;if(bw){bw.disabled=true;bw.setAttribute('data-ro','1');bw.title='Use Book job to set or change the booking window'}}
   if(type==='job'&&id){const og=$('#frm').elements.org;if(og){og.disabled=true;og.setAttribute('data-ro','1');og.title='The organisation can\u2019t be changed once the job has been created'}}
@@ -912,7 +924,7 @@ function openForm(type,id){
     save();const kb=BOOKKEEP;BOOKKEEP=0;$('#dlg').close();render();toast(`Saved ${t.label}`);if(kb&&type==='job')openForm('job',id||D.jobs[D.jobs.length-1].id);
     if(type==='job'){const j=id?rec:D.jobs[D.jobs.length-1];if(j.agent&&j.agent!==prevA)previewMsgs(j.id)}};
   $('#cancel').onclick=()=>$('#dlg').close();
-  if($('#bookb'))$('#bookb').onclick=()=>{const F0=$('#frm');if(!F0.elements.status)return;if(isAgentMe()){F0.elements.status.value='Booked';F0.requestSubmit();return}
+  if($('#bookb'))$('#bookb').onclick=()=>{const F0=$('#frm');if(!F0.elements.status)return;if([...F0.querySelectorAll('[required]')].some(x=>!String(x.value||'').trim())){toast('Complete all mandatory fields before booking');return}if(isAgentMe()){F0.elements.status.value='Booked';F0.requestSubmit();return}
     const cur=(F0.elements.sorg&&F0.elements.sorg.value)||rec.sorg||'',curA=(F0.elements.agent&&F0.elements.agent.value)||rec.agent||'',bd=$('#bkd'),bc=$('#bkc');
     const jtB=D.jobTypes.find(x=>x.id===(F0.elements.jobType?F0.elements.jobType.value:rec.jobType));
     const allOrgs=()=>D.orgs.filter(o=>o.orgType==='Servicer'&&(o.status!=='Inactive'||o.id===cur)&&((orgInsured(o)&&orgCovers(o,jpc))||o.id===cur)).sort((a,b)=>a.name.localeCompare(b.name));
