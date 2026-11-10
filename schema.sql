@@ -37,9 +37,9 @@ language sql stable security definer set search_path = public as $$
 $$;
 create or replace function public.ra_is_active() returns boolean language sql stable as $$ select public.ra_me() is not null $$;
 create or replace function public.ra_is_admin()  returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'role' = 'SYSADMIN', false) $$;
-create or replace function public.ra_is_agent()  returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'personType' = 'Repair Agent', false) $$;
+create or replace function public.ra_is_agent()  returns boolean language sql stable security definer set search_path = public as $$ select exists (select 1 from public.docs o where o.coll = 'orgs' and o.id = (public.ra_me()->>'org') and o.data->>'orgType' = 'Servicer') $$;
 create or replace function public.ra_my_org()    returns text    language sql stable as $$ select public.ra_me()->>'org' $$;
-create or replace function public.ra_is_sysuser() returns boolean language sql stable as $$ select coalesce(public.ra_me()->>'personType' = 'System User' and public.ra_me()->>'role' <> 'SYSADMIN', false) $$;
+create or replace function public.ra_is_sysuser() returns boolean language sql stable security definer set search_path = public as $$ select coalesce(public.ra_me()->>'role' <> 'SYSADMIN', false) and not public.ra_is_agent() $$;
 create or replace function public.ra_my_id()     returns text    language sql stable as $$ select public.ra_me()->>'id' $$;
 revoke all on function public.ra_me() from public, anon;
 grant execute on function public.ra_me(), public.ra_is_active(), public.ra_is_admin(), public.ra_is_agent(), public.ra_my_id(), public.ra_my_org(), public.ra_is_sysuser() to authenticated;
@@ -63,7 +63,7 @@ begin
     else
       insert into public.docs (path, coll, id, data)
       select 'users/'||x, 'users', x, jsonb_build_object('id', x, 'name', nm, 'email', em, 'phone', '',
-             'role','SYSADMIN','status','Active','org','','personType','System User')
+             'role','SYSADMIN','status','Active','org','')
       from (select 'u'||substr(encode(gen_random_bytes(8),'hex'),1,10) as x) s;
     end if;
   elsif not exists (select 1 from public.docs where coll = 'users' and lower(data->>'email') = em and data->>'status' = 'Active') then
@@ -309,8 +309,7 @@ begin
     'notes', coalesce(p->>'notes',''), 'jobPrice', null,
     'jobLimit', to_jsonb(lim), 'jobLimitBasis', basis,
     'created', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-    'history', jsonb_build_array(jsonb_build_object('at', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-        'by', 'API: ' || kname, 'note', 'Job created', 'statusChanged', false, 'bookingChanged', false, 'changes', '[]'::jsonb)));
+    'events', '[]'::jsonb);
   insert into public.docs (path, coll, id, data) values ('jobs/' || jid, 'jobs', jid, j);
   return jsonb_build_object('id', jid, 'number', num, 'duplicate', false);
 end $$;
@@ -343,7 +342,7 @@ begin
     else
       insert into public.docs (path, coll, id, data)
       select 'users/'||x, 'users', x, jsonb_build_object('id', x, 'name', nm, 'email', em, 'phone', '',
-             'role','SYSADMIN','status','Active','org','','personType','System User')
+             'role','SYSADMIN','status','Active','org','')
       from (select 'u'||substr(encode(gen_random_bytes(8),'hex'),1,10) as x) s;
     end if;
   elsif coalesce(current_setting('ra.allow_signup', true), '') <> '1' then
@@ -403,5 +402,6 @@ drop policy if exists ra_photos_del on storage.objects;
 create policy ra_photos_del on storage.objects for delete to authenticated
   using (bucket_id = 'photos' and public.ra_is_admin());
 
--- Person type renamed: Service Agent -> Repair Agent
-update public.docs set data = jsonb_set(data,'{personType}','"Repair Agent"') where coll='users' and data->>'personType'='Service Agent';
+-- Person type and job history removed; job events replace history
+update public.docs set data = data - 'personType' where coll='users' and data ? 'personType';
+update public.docs set data = data - 'history' where coll='jobs' and data ? 'history';
