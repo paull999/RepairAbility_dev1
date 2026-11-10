@@ -886,7 +886,7 @@ function openForm(type,id){
     f.querySelectorAll('[data-lk]').forEach(el=>{el.disabled=false;el.removeAttribute('data-lk')});const m=$('#lockmsg');if(m)m.remove();
     const sv=f.querySelector('button[type=submit]');if(sv)sv.textContent=on&&LOCKED?'Save':'Save';
     if(!on)return;
-    f.querySelectorAll('input,select,textarea,button').forEach(el=>{if(el.disabled||keep.has(el.id)||el.hasAttribute('data-tab-btn')||el.name==='status'||el.type==='submit')return;el.disabled=true;el.setAttribute('data-lk','1')});
+    f.querySelectorAll('input,select,textarea,button').forEach(el=>{if(el.disabled||keep.has(el.id)||el.hasAttribute('data-tab-btn')||el.name==='status'||el.type==='submit'||el.closest('#jevents'))return;el.disabled=true;el.setAttribute('data-lk','1')});
     f.querySelector('h2').insertAdjacentHTML('afterend',`<p id="lockmsg" style="grid-column:1/-1;margin:0;padding:8px 12px;border-radius:8px;background:color-mix(in srgb,var(--mute) 14%,var(--panel));font-weight:600">${LOCKED?'This job is '+esc(st)+', so only its status can be changed. Change the status to another value to edit the job again.':'With a status of '+esc(st)+' the job becomes read-only once saved. Only the status can be changed.'}</p>`)};
   if(type==='job'){lockForm(LST.includes(rec.status||(($('#frm').elements.status||{}).value)));const syncBk=()=>{const bk=$('#bookb'),F=$('#frm');if(!bk)return;const no=[...F.querySelectorAll('[required]')].some(x=>!String(x.value||'').trim());bk.disabled=isAgentMe()||no;bk.title=isAgentMe()?'Service agents cannot book jobs':no?'Complete all mandatory fields before booking':''};
     if(type==='job')syncBk();
