@@ -169,6 +169,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
 </aside>
 <main id="main"></main>
 </div>
+<dialog id="invd" style="width:min(640px,94vw)"><div id="invc" style="padding:22px;display:grid;gap:14px"></div></dialog>
 <dialog id="evd"><form id="evf" style="padding:22px;min-width:340px;display:grid;gap:12px"></form></dialog>
 <dialog id="dlg"><form id="frm" method="dialog"></form></dialog>
 <dialog id="dry"><div id="dryc" style="padding:22px"></div></dialog>
@@ -1008,9 +1009,18 @@ function openForm(type,id){
       if(mode()!=='Assign only'){const fd=F0.elements.date,dv=$('#bkdt').value;if(!dv)return;if(fd){fd.value=dv;fd.dispatchEvent(new Event('change',{bubbles:true}))}else if(dv)F0.insertAdjacentHTML('beforeend',`<input type="hidden" name="date" value="${esc(dv)}">`)}F0.elements.status.value='Booked';BOOKKEEP=1;bd.close();F0.requestSubmit()};
     bd.showModal()};
   if(id&&type==='job'&&$('#jsbtn'))$('#jsbtn').onclick=()=>openSheet(id);
-  if(id&&type==='job'&&$('#invb'))$('#invb').onclick=async()=>{const j=D.jobs.find(x=>x.id===id);if(!j||j.status!=='Closed'){toast('Only a Closed job can be invoiced');return}
-    if(!await ask('Invoice this job? The status will be set to Invoiced and the job will be fully locked and cannot be changed.','Invoice job'))return;
-    const old={...j};j.status='Invoiced';logHist(j,old);save();$('#dlg').close();render();toast('Job invoiced')};
+  if(id&&type==='job'&&$('#invb'))$('#invb').onclick=()=>{const j=D.jobs.find(x=>x.id===id);if(!j||j.status!=='Closed'){toast('Only a Closed job can be invoiced');return}
+    const parts=j.usedParts||[],jp=jobPriceOf(j),pt=jobTotal(j),tot=totalPrice(j);
+    $('#invc').innerHTML=`<h2 style="margin:0">Invoice job${j.number?' \u00b7 '+esc(j.number):''}</h2>${j.title?`<p style="margin:0;color:var(--mute)">${esc(j.title)}</p>`:''}
+    <div class="wrap"><table style="width:100%"><thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Total</th></tr></thead><tbody>
+    <tr><td><strong>Job price</strong></td><td style="text-align:right">1</td><td style="text-align:right">${gbp(jp)}</td><td style="text-align:right">${gbp(jp)}</td></tr>
+    ${parts.map(u=>`<tr><td>${esc(ulabel(u))}${u.state&&u.state!=='Used'?` <span style="color:var(--mute);font-size:12px">(${esc(u.state)})</span>`:''}</td><td style="text-align:right">${esc(String(u.qty||0))}</td><td style="text-align:right">${gbp(unitPrice(u))}</td><td style="text-align:right">${gbp(lineTotal(u))}</td></tr>`).join('')}
+    ${parts.length?`<tr><td colspan="3" style="text-align:right;color:var(--mute)">Parts total</td><td style="text-align:right">${gbp(pt)}</td></tr>`:''}
+    </tbody><tfoot><tr><th colspan="3" style="text-align:right;font-size:16px">Job Total</th><th style="text-align:right;font-size:16px">${gbp(tot)}</th></tr></tfoot></table></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="invx">Cancel</button><button type="button" class="btn" id="invgo">Invoice Job</button></div>`;
+    $('#invx').onclick=()=>$('#invd').close();
+    $('#invgo').onclick=()=>{const jj=D.jobs.find(x=>x.id===id);if(!jj||jj.status!=='Closed'){$('#invd').close();toast('Only a Closed job can be invoiced');return}const old={...jj};jj.status='Invoiced';logHist(jj,old);save();$('#invd').close();render();openForm('job',id);toast('Job invoiced')};
+    $('#invd').showModal()};
   if(id&&$('#del'))$('#del').onclick=()=>{
     if(type==='job'&&!ADM()){toast('Only a system administrator can delete a job');return}
     if(type==='user'&&id===ME.id){$('#dlg').close();toast('You can’t delete your own account while signed in');return}
