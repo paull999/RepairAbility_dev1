@@ -461,6 +461,7 @@ function filesBody(j){
 function fileDiff(old,nw){const a=old.files||[],b=nw.files||[],out=[];b.forEach(p=>{const q=a.find(x=>x.id===p.id);if(!q)out.push({text:'File added: '+p.name});else if((q.desc||'')!==(p.desc||''))out.push({text:'File description changed: '+p.name})});a.forEach(q=>{if(!b.some(p=>p.id===q.id))out.push({text:'File removed: '+q.name})});return out}
 function evType(nm){let t=D.eventTypes.find(x=>x.name.toLowerCase()===nm.toLowerCase());if(!t){t={id:uid(),name:nm,description:''};D.eventTypes.push(t)}return t}
 const EVQ={'Email':'Email','Phone Call':'Phone call','Note':'Note','Visit':'Site visit'};
+function renumVisits(j){const vt=D.eventTypes.find(x=>x.name.toLowerCase()==='site visit');if(!vt)return;(j.events||[]).filter(x=>x.type===vt.id).sort((a,b)=>((a.visitNo||1e9)-(b.visitNo||1e9))||String(a.at).localeCompare(String(b.at))).forEach((x,i)=>{x.visitNo=i+1})}
 const evLoc=iso=>{const d=new Date(iso);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
 function openEventQuick(jid,lab,eid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;const ex=eid?(j.events||[]).find(x=>x.id===eid):null;if(eid&&!ex)return;
   if(ex){const t=D.eventTypes.find(x=>x.id===ex.type);lab=t?(Object.keys(EVQ).find(k=>EVQ[k].toLowerCase()===t.name.toLowerCase())||t.name):'Event'}
@@ -1053,7 +1054,7 @@ document.addEventListener('click',e=>{
   const qr=e.target.closest('[data-qrm]');if(qr){const j=jobP();if(j){const ix=+qr.dataset.qrm;ask('Remove this photo?','Remove').then(ok=>{if(!ok)return;const old=snapJ(j);j.photos.splice(ix,1);logHist(j,old);save();jrefresh()})}return}
   const evq=e.target.closest('[data-evq]');if(evq){const f=$('#frm'),jid=f&&f.dataset.id||(typeof V!=='undefined'&&V.jid);openEventQuick(jobP()?jobP().id:jid,evq.dataset.evq);return}
   const eve=e.target.closest('[data-eved]');if(eve){const j=jobP();if(j)openEventQuick(j.id,'',eve.dataset.eved);return}
-  const evr=e.target.closest('[data-evrm]');if(evr){const j=jobP();if(j){ask('Remove this event?','Remove').then(ok=>{if(!ok)return;j.events=(j.events||[]).filter(x=>x.id!==evr.dataset.evrm);save();jrefresh()})}return}
+  const evr=e.target.closest('[data-evrm]');if(evr){const j=jobP();if(j){ask('Remove this event?','Remove').then(ok=>{if(!ok)return;j.events=(j.events||[]).filter(x=>x.id!==evr.dataset.evrm);renumVisits(j);save();jrefresh()})}return}
   if(e.target.closest('#fladdb')){$('#fla').click();return}
   const fr=e.target.closest('[data-frm]');if(fr){const j=jobP();if(j){const ix=+fr.dataset.frm;ask('Remove this file?','Remove').then(ok=>{if(!ok)return;const old=snapJ(j);j.files.splice(ix,1);logHist(j,old);save();jrefresh()})}return}
   const fd=e.target.closest('[data-fdl]');if(fd){const f=((jobP()||{}).files||[])[+fd.dataset.fdl];if(f){if(!f.data){toast('This file is still loading. Try again in a moment.');return}fetch(f.data).then(r=>r.arrayBuffer()).then(b=>saveBytes(f.name,new Uint8Array(b))).catch(()=>toast('Couldn’t download the file'))}return}
