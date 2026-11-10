@@ -887,6 +887,9 @@ function openForm(type,id){
     if(type==='job')$('#frm').addEventListener('input',()=>syncBk());
     $('#frm').onchange=e=>{if(e.target.name==='status'){const on=LST.includes(e.target.value);lockForm(on);const bk=$('#bookb');if(bk)bk.hidden=NOBOOK.includes(e.target.value);syncBk()}
       if(type==='job')syncBk();
+      if(type==='job'&&id&&e.target.name==='status'&&e.target.value==='New'&&rec.status!=='New'){const F=$('#frm'),g=n=>F.elements[n]?F.elements[n].value:'';if(g('date')||g('sorg')||g('bookingWindow')){const el=e.target;ask('Setting the status to New will remove the booking: the scheduled date, assigned servicer and booking window will be cleared. Do you want to continue?','Continue').then(okc=>{if(!okc){el.value=rec.status;lockForm(LST.includes(rec.status));const bk=$('#bookb');if(bk)bk.hidden=NOBOOK.includes(rec.status);syncBk();return}
+        const fs=F.elements.sorg;if(fs){fs.value='';fs.dispatchEvent(new Event('change',{bubbles:true}))}
+        ['bookingWindow','date','agent'].forEach(n=>{const x=F.elements[n];if(x)x.value=''});syncBk()})}}
       if(type==='job'&&id&&(e.target.name==='jobType'||e.target.name==='postcode')){const F=$('#frm'),g=n=>F.elements[n]?F.elements[n].value:'',nz=v=>String(v||'').toUpperCase().replace(/\s+/g,'');
         const changed=e.target.name==='jobType'?e.target.value!==(rec.jobType||''):nz(e.target.value)!==nz(rec.postcode);
         if(changed&&(g('date')||g('sorg')||g('bookingWindow'))){const nm=e.target.name,el=e.target;
