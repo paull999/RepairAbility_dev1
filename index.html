@@ -779,7 +779,7 @@ function sheetModel(j){
     {h:'Job',rows:[['Job number',j.number],['External job reference',j.extRef],['Job title',j.title],['Status',j.status],['Job type',jt&&jt.name],['Scheduled date',fdate(j.date)],['Time needed',j.minutes?dur(+j.minutes):''],['Created',fdt(j.created)]]},
     {h:'Customer',rows:[['Name',j.custName],['Email',j.custEmail],['Telephone',j.custPhone],['Address',jaddr(j)]]},
     {h:'Organisation and service',rows:[['Organisation',o&&o.name],['Assigned servicer',so&&so.name],['Booking window',j.bookingWindow],['Service agent',ag&&ag.name+(ag.phone?' ('+ag.phone+')':'')]]},
-    {h:'Pricing',rows:[['Job price',gbp(jobPriceOf(j))],['Coverage supplement',gbp(covOf(j))],['Parts price',gbp(jobTotal(j))],['Total price',gbp(totalPrice(j))]]},
+    {h:'Pricing',rows:[['Job price',gbp(jobPriceOf(j))],['Parts price',gbp(jobTotal(j))],['Total price',gbp(totalPrice(j))]]},
     {h:'Notes',rows:[['Notes',j.notes]]}
   ].map(x=>({h:x.h,rows:x.rows.filter(r=>r[1]!==''&&r[1]!=null)})).filter(x=>x.rows.length);
   const parts=(j.usedParts||[]).map(u=>({name:ulabel(u),qty:u.qty,unit:gbp(unitPrice(u)),total:gbp(lineTotal(u)),state:(u.state||'Used')+(u.state==='Ordered'&&u.vendor?' ('+u.vendor+')':''),note:u.note||''}));
@@ -1032,7 +1032,6 @@ function openForm(type,id){
     $('#invc').innerHTML=`<h2 style="margin:0">Invoice job${j.number?' \u00b7 '+esc(j.number):''}</h2>${j.title?`<p style="margin:0;color:var(--mute)">${esc(j.title)}</p>`:''}
     <div class="wrap"><table style="width:100%"><thead><tr><th>Item</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Total</th></tr></thead><tbody>
     <tr><td><strong>Job price</strong></td><td style="text-align:right">1</td><td style="text-align:right">${gbp(jp)}</td><td style="text-align:right">${gbp(jp)}</td></tr>
-    ${covOf(j)?`<tr><td><strong>Coverage supplement</strong><div style="color:var(--mute);font-size:12px">${esc(j.covSrc||'')}</div></td><td style="text-align:right">1</td><td style="text-align:right">${gbp(covOf(j))}</td><td style="text-align:right">${gbp(covOf(j))}</td></tr>`:''}
     ${parts.map(u=>`<tr><td>${esc(ulabel(u))}${u.state&&u.state!=='Used'?` <span style="color:var(--mute);font-size:12px">(${esc(u.state)})</span>`:''}</td><td style="text-align:right">${esc(String(u.qty||0))}</td><td style="text-align:right">${gbp(unitPrice(u))}</td><td style="text-align:right">${gbp(lineTotal(u))}</td></tr>`).join('')}
     ${parts.length?`<tr><td colspan="3" style="text-align:right;color:var(--mute)">Parts total</td><td style="text-align:right">${gbp(pt)}</td></tr>`:''}
     </tbody><tfoot><tr><th colspan="3" style="text-align:right;font-size:16px">Job Total</th><th style="text-align:right;font-size:16px">${gbp(tot)}</th></tr></tfoot></table></div>
