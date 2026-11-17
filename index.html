@@ -42,7 +42,7 @@ main{padding:26px 30px;min-width:0}
 header.top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
 h1{font-size:26px;letter-spacing:-.02em;margin:0 auto 0 0;font-weight:800}
 .btn{background:var(--acc);color:var(--acc-ink);border:0;padding:9px 16px;border-radius:var(--r);font-weight:700;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.xpbar{display:flex;justify-content:flex-end;margin:0 0 6px}.xp{padding:4px 12px}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:transparent;color:var(--urgent);border:1px solid var(--urgent)}
 .in{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;width:100%}
 .top .in{width:auto;min-width:150px}
@@ -166,7 +166,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 325</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 326</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -206,6 +206,26 @@ const vtKey=()=>V.view==='setup'?'setup:'+V.stab:V.view,vtGet=()=>'table';
 let PSZ=50;try{const v=+localStorage.getItem('ra_pagesize');if([25,50,100,250].includes(v))PSZ=v}catch(e){}
 const PG={},PGS={};
 const PSIZES=[25,50,100,250];
+const XP={};
+const xpCols=t=>{const hr=t.tHead&&t.tHead.rows[0];if(!hr)return[];return[...hr.cells].map((c,i)=>({i,h:c.textContent.replace(/[\u25B2\u25BC]/g,'').replace(/\s+/g,' ').trim()})).filter(c=>c.h&&c.h!=='#'&&!/^(photo|actions?)$/i.test(c.h))};
+const xpTxt=c=>{const f=c.querySelector('input:not([type=hidden]),select,textarea');let v=f?(f.type==='checkbox'?(f.checked?'Yes':'No'):f.value):(c.getAttribute('data-xv')||c.textContent);v=String(v).replace(/\s+/g,' ').trim();return v==='\u2014'?'':v};
+function xpRead(t,rows){const cs=xpCols(t);return{head:cs.map(c=>c.h),rows:rows.map(r=>cs.map(c=>r.cells[c.i]?xpTxt(r.cells[c.i]):''))}}
+const xpTitle=t=>{const d=t.closest('#jevents,#jparts,#jfiles,#jphotos,#jhist');if(d){const n={jevents:'Events',jparts:'Parts',jfiles:'Files',jphotos:'Photos',jhist:'History'}[d.id];const f=$('#frm'),jn=f&&f.querySelector('[name=number]');return(jn&&jn.value?'Job '+jn.value+' ':'')+n}const w=t.closest('.wrap')||t;let e=w.previousElementSibling,k=0;while(e&&k<6){const h=e.matches('h1,h2')?e:e.querySelector('h1,h2');if(h)return h.textContent.trim();e=e.previousElementSibling;k++}const m=$('#main h1');return m?m.textContent.trim():'Export'};
+const csvCell=v=>{v=String(v==null?'':v);if(/^[=+\-@]/.test(v)&&isNaN(v))v="'"+v;return/[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+function xpExport(data,title){if(!data||!data.head.length){toast('Nothing to export');return}
+  const csv='\uFEFF'+[data.head,...data.rows].map(r=>r.map(csvCell).join(',')).join('\r\n')+'\r\n';
+  const nm='RepairAbility - '+title.replace(/[\\/:*?"<>|]+/g,'').trim()+' - '+new Date().toISOString().slice(0,10)+'.csv';
+  saveBytes(nm,new TextEncoder().encode(csv));toast('Exporting '+data.rows.length.toLocaleString()+' row'+(data.rows.length===1?'':'s'))}
+function xpScan(){document.querySelectorAll('#main table,#dlg table').forEach(t=>{if(t.dataset.xp||t.closest('#cols,#jsd,#invd,#bkd'))return;if(!t.tHead||!t.tBodies[0])return;t.dataset.xp='1';
+  if(V.view==='jobs'&&t.classList.contains('sheet')&&t.closest('#main'))return;
+  const w=t.closest('.wrap')||t;let hd=null,e=w.previousElementSibling,k=0;while(e&&k<6&&!hd){if(e.matches('header.top'))hd=e;e=e.previousElementSibling;k++}
+  const b=document.createElement('button');b.type='button';b.className='btn ghost xp';b.textContent='Export';b.title='Export this list to a CSV file';b._t=t;
+  if(hd&&!hd.querySelector('.xp,[data-xpj]')){hd.appendChild(b)}else{const bar=document.createElement('div');bar.className='xpbar';bar.appendChild(b);w.parentNode.insertBefore(bar,w)}});
+  if($('#dlg')&&$('#dlg').open&&typeof fitTabs==='function')fitTabs()}
+{let q=0;new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;xpScan()})}).observe(document.body,{childList:true,subtree:true})}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.xp,[data-xpj]');if(!b)return;e.preventDefault();e.stopPropagation();
+  if(b.dataset.xpj){xpExport(XP.jobs,'Jobs');return}
+  const t=b._t;if(!t)return;xpExport(t._xp||xpRead(t,[...t.tBodies[0].rows]),xpTitle(t))},true);
 function pagerHtml(key,n,p,pages){
   if(n<=PSIZES[0])return'';const a=(p-1)*PSZ+1,b=Math.min(n,p*PSZ),k=esc(key);
   const bt=(d,l,dis,t)=>`<button type="button" class="btn ghost" data-pgk="${k}" data-pgd="${d}" aria-label="${t}"${dis?' disabled':''}>${l}</button>`;
@@ -221,7 +241,7 @@ function pageLists(){
   [...main.querySelectorAll('table')].forEach((t,idx)=>{
     if(V.view==='jobs')return;const tb=t.tBodies[0];if(!tb)return;const rows=[...tb.rows];if(rows.length<=PSIZES[0])return;
     const key=V.view+(V.view==='setup'?':'+V.stab:'')+'#'+idx,pg=pgPage(key,rows,rows[0].dataset.id||rows[0].textContent.slice(0,30));
-    const keep=new Set(pg.rows);rows.forEach(r=>{if(!keep.has(r))r.remove()});
+    t._xp=xpRead(t,rows);const keep=new Set(pg.rows);rows.forEach(r=>{if(!keep.has(r))r.remove()});
     const host=t.closest('.wrap')||t;host.insertAdjacentHTML('afterend',pg.html.replace('<div class="pager"','<div class="pager" data-dom="1"'))})}
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-pgk]');if(!b||b.disabled)return;
   const k=b.dataset.pgk,d=b.dataset.pgd,pages=Math.max(1,Math.ceil((PGN[k]||1)/PSZ));
@@ -371,12 +391,13 @@ function jobsView(){
   const list=myJobs().filter(j=>cfa.every(([k,v])=>CFV(j,k).toLowerCase().includes(v.toLowerCase()))).filter(j=>(!V.status||j.status===V.status)&&(!V.agent||(V.agent==='none'?!j.agent:j.agent===V.agent))&&(!V.sv||j.sorg===V.sv)&&(!q||(j.number+' '+j.title+' '+jaddr(j)+' '+(j.notes||'')+' '+(orgn(j.org)?.name||'')+' '+(agt(j.agent)?.name||'')+' '+(j.status||'')).toLowerCase().includes(q)));
   const open=myJobs().filter(j=>!CLOSED.includes(j.status));
   const JP=pgPage('jobs',[...list].sort((a,b)=>{const x=SK[V.sort](a),y=SK[V.sort](b);return(x>y?1:x<y?-1:0)*V.dir}));
+  XP.jobs={head:['Job no.','Job','Status','Organisation','Job type','Time needed','Address','Assigned Servicer','Date','Created','Notes'],rows:JP.all.map(j=>[j.number,j.title,j.status,orgn(j.org)?.name||'',D.jobTypes.find(x=>x.id===j.jobType)?.name||'',j.minutes?dur(+j.minutes):'',jaddr(j)||'',orgn(j.sorg)?.name||'',j.date?fmt(j.date):'',fdt(j.created)||'',j.notes||''])};
   const stats=[[open.length,'Open jobs'],[open.filter(j=>!j.agent).length,'Unassigned'],[open.filter(j=>j.date===today).length,'Due today'],[open.filter(j=>j.date&&j.date<today).length,'Overdue']];
   return`<div class="jsearch flt"><input class="in" type="search" id="q" placeholder="Search jobs by number, title, organisation, service agent, address, status or notes" value="${esc(V.q)}" aria-label="Search jobs"></div>
   <header class="top"><h1>Jobs</h1>
   ${isAgentMe()?'':`<select class="in flt" id="fsv" aria-label="Filter by servicer"><option value="">Servicer: All</option>${D.orgs.filter(o=>o.orgType==='Servicer').sort((a,b)=>a.name.localeCompare(b.name)).map(o=>`<option value="${o.id}"${V.sv===o.id?' selected':''}>${esc(o.name)}</option>`).join('')}</select>`}
   <select class="in flt" id="fs" aria-label="Filter by status"><option value="">All statuses</option>${ST.map(s=>`<option${V.status===s?' selected':''}>${s}</option>`).join('')}</select>
-  ${ftogBtn()}${isAgentMe()?'':'<button class="btn" data-new="job" title="Creates a new job">New Job</button>'}</header>
+  <button type="button" class="btn ghost" data-xpj="1" title="Export the jobs in this list to a CSV file">Export</button>${ftogBtn()}${isAgentMe()?'':'<button class="btn" data-new="job" title="Creates a new job">New Job</button>'}</header>
   <div class="stats" id="stats">${stats.map(s=>`<div><strong>${s[0]}</strong><span>${s[1]}</span></div>`).join('')}</div>
   ${(isPhone()||vtGet()==='cards')?jobCards(JP):(list.length||cfa.length)?`<div class="wrap"><table class="sheet" style="min-width:1650px"><thead><tr><th style="width:44px;cursor:default">#</th>${[['number','Job no.'],['title','Job'],['status','Status'],['org','Organisation'],['jobType','Job type'],['minutes','Time needed'],['addr','Address'],['sorg','Assigned Servicer'],['date','Date'],['created','Created'],['','Notes']].map(([k,l])=>`<th${k?` data-sort="${k}" aria-sort="${V.sort===k?(V.dir>0?'ascending':'descending'):'none'}"${k==='status'?' style="width:206px"':''}`:' style="cursor:default"'}>${l}${V.sort===k?(V.dir>0?' ▲':' ▼'):''}</th>`).join('')}<th style="width:110px;cursor:default"></th></tr><tr class="cfrow"><th></th>${CFK.map(k=>`<th><input class="cfin" data-cf="${k}" value="${esc(V.cf[k]||'')}" placeholder="Filter" aria-label="Filter ${k}"></th>`).join('')}<th><button class="btn ghost" id="cfclr" style="padding:2px 8px">Clear filters</button></th></tr></thead><tbody>${JP.rows.map((j,i)=>{const late=j.date&&j.date<today&&!CLOSED.includes(j.status);
   const o=(arr,v)=>arr.map(x=>`<option value="${esc(x[0])}"${x[0]===v?' selected':''}>${esc(x[1])}</option>`).join('');
