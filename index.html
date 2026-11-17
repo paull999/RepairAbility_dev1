@@ -42,7 +42,7 @@ main{padding:26px 30px;min-width:0}
 header.top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
 h1{font-size:26px;letter-spacing:-.02em;margin:0 auto 0 0;font-weight:800}
 .btn{background:var(--acc);color:var(--acc-ink);border:0;padding:9px 16px;border-radius:var(--r);font-weight:700;cursor:pointer}
-.xpbar{display:flex;justify-content:flex-end;margin:0 0 6px}.xp{padding:4px 12px}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.imp{padding:4px 12px}body.importing #dlg{opacity:0}body.importing #dlg::backdrop{background:transparent}#impd table{font-size:13px}.xpbar{display:flex;justify-content:flex-end;margin:0 0 6px}.xp{padding:4px 12px}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:transparent;color:var(--urgent);border:1px solid var(--urgent)}
 .in{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;width:100%}
 .top .in{width:auto;min-width:150px}
@@ -166,12 +166,13 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 326</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 327</span></div>
 </aside>
 <main id="main"></main>
 </div>
 <dialog id="invd" style="width:min(640px,94vw)"><div id="invc" style="padding:22px;display:grid;gap:14px"></div></dialog>
 <dialog id="evd"><form id="evf" style="padding:22px;min-width:340px;display:grid;gap:12px"></form></dialog>
+<dialog id="impd" style="width:min(720px,94vw)"><div id="impc" style="padding:22px;display:grid;gap:14px"></div></dialog>
 <dialog id="dlg"><form id="frm" method="dialog"></form></dialog>
 <dialog id="dry"><div id="dryc" style="padding:22px"></div></dialog>
 <dialog id="pwd"><div id="pwdc" style="padding:22px"></div></dialog>
@@ -216,7 +217,8 @@ function xpExport(data,title){if(!data||!data.head.length){toast('Nothing to exp
   const csv='\uFEFF'+[data.head,...data.rows].map(r=>r.map(csvCell).join(',')).join('\r\n')+'\r\n';
   const nm='RepairAbility - '+title.replace(/[\\/:*?"<>|]+/g,'').trim()+' - '+new Date().toISOString().slice(0,10)+'.csv';
   saveBytes(nm,new TextEncoder().encode(csv));toast('Exporting '+data.rows.length.toLocaleString()+' row'+(data.rows.length===1?'':'s'))}
-function xpScan(){document.querySelectorAll('#main table,#dlg table').forEach(t=>{if(t.dataset.xp||t.closest('#cols,#jsd,#invd,#bkd'))return;if(!t.tHead||!t.tBodies[0])return;t.dataset.xp='1';
+function impScan(){document.querySelectorAll('#main header.top').forEach(h=>{if(h.querySelector('.imp'))return;const nb=h.querySelector('[data-new]')||h.querySelector('[data-edit=syscov]');if(!nb)return;const b=document.createElement('button');b.type='button';b.className='btn ghost imp';b.textContent='Import';b.title='Import records from a CSV file';b.dataset.imp=nb.dataset.new||'syscov';h.insertBefore(b,nb)})}
+function xpScan(){impScan();document.querySelectorAll('#main table,#dlg table').forEach(t=>{if(t.dataset.xp||t.closest('#cols,#jsd,#invd,#bkd'))return;if(!t.tHead||!t.tBodies[0])return;t.dataset.xp='1';
   if(V.view==='jobs'&&t.classList.contains('sheet')&&t.closest('#main'))return;
   const w=t.closest('.wrap')||t;let hd=null,e=w.previousElementSibling,k=0;while(e&&k<6&&!hd){if(e.matches('header.top'))hd=e;e=e.previousElementSibling;k++}
   const b=document.createElement('button');b.type='button';b.className='btn ghost xp';b.textContent='Export';b.title='Export this list to a CSV file';b._t=t;
@@ -226,6 +228,58 @@ function xpScan(){document.querySelectorAll('#main table,#dlg table').forEach(t=
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.xp,[data-xpj]');if(!b)return;e.preventDefault();e.stopPropagation();
   if(b.dataset.xpj){xpExport(XP.jobs,'Jobs');return}
   const t=b._t;if(!t)return;xpExport(t._xp||xpRead(t,[...t.tBodies[0].rows]),xpTitle(t))},true);
+
+/* ---- CSV import ---- */
+const impSleep=ms=>new Promise(r=>setTimeout(r,ms));
+function csvParse(t){t=String(t).replace(/^﻿/,'');const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===','){r.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;r.push(c);c='';rows.push(r);r=[]}else c+=ch}if(c!==''||r.length){r.push(c);rows.push(r)}return rows.filter(x=>x.some(v=>String(v).trim()!==''))}
+const impNorm=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+const SYSCOV_COLS=[{name:'from',label:'From',required:true},{name:'to',label:'To'},{name:'supp',label:'Supplement'}];
+async function impColumns(type){if(type==='syscov')return SYSCOV_COLS;document.body.classList.add('importing');try{openForm(type);await impSleep(0);if(!$('#dlg').open)return null;const cols=[],seen=new Set();$('#frm').querySelectorAll('[name]').forEach(el=>{const n=el.name;if(!n||seen.has(n)||el.disabled||el.readOnly||/^(hidden|file|password|button|submit|radio)$/.test(el.type))return;const lb=el.closest('label');let l=lb?[...lb.childNodes].filter(x=>x.nodeType===3).map(x=>x.textContent).join('').replace(/\*/g,'').trim():'';l=l||el.getAttribute('aria-label')||n;seen.add(n);cols.push({name:n,label:l,required:el.required})});const cn=$('#cancel');if(cn)cn.click();else $('#dlg').close();return cols}finally{document.body.classList.remove('importing')}}
+function impDate(v){let m;if(m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v))return v.slice(0,10);if(m=/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/.exec(v)){const y=m[3].length===2?'20'+m[3]:m[3];return y+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0')}const d=new Date(v+' 12:00');return isNaN(d)?null:d.toISOString().slice(0,10)}
+function impSet(el,v,label){v=String(v).trim();if(v==='')return'';const fire=()=>{el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}))};
+  if(el.tagName==='SELECT'){const L=v.toLowerCase(),vs=el.multiple?v.split(/\s*;\s*/):[v];let bad=null;[...el.options].forEach(o=>{if(el.multiple)o.selected=false});vs.forEach(x=>{const X=x.toLowerCase(),o=[...el.options].find(o=>!o.disabled&&(o.value.toLowerCase()===X||o.textContent.trim().toLowerCase()===X));if(!o){bad=x;return}if(el.multiple)o.selected=true;else el.value=o.value});if(bad!==null)return'Unknown value "'+bad+'" for '+label;fire();return''}
+  if(el.type==='checkbox'){el.checked=/^(y|yes|true|1|x|on)$/i.test(v);fire();return''}
+  if(el.type==='date'){const d=impDate(v);if(!d)return'Invalid date "'+v+'" for '+label;el.value=d;fire();return''}
+  if(el.type==='number'){const n=parseFloat(v.replace(/[£,]/g,''));if(!isFinite(n))return'Invalid number "'+v+'" for '+label;el.value=n;fire();return''}
+  el.value=v;fire();return''}
+async function impRow(type,cols,vals){const t=F[type],before=(D[t.key]||[]).length;document.body.classList.add('importing');try{openForm(type);await impSleep(0);if(!$('#dlg').open)return'Could not open the add form';const f=$('#frm');
+  for(const c of cols){const el=f.elements[c.name];if(!el||el.length>1&&!el.tagName)continue;const e=impSet(el,vals[c.i],c.label);if(e){const cn=$('#cancel');cn?cn.click():$('#dlg').close();return e}}
+  f.requestSubmit();
+  if(!f.checkValidity()){const bad=f.querySelector(':invalid'),lb=bad&&bad.closest('label');const nm=lb?[...lb.childNodes].filter(x=>x.nodeType===3).map(x=>x.textContent).join('').replace(/\*/g,'').trim():(bad&&bad.name)||'';const m=(nm?nm+': ':'')+((bad&&bad.validationMessage)||'Invalid value');const cn=$('#cancel');cn?cn.click():$('#dlg').close();return m}
+  for(let k=0;k<80;k++){await impSleep(25);if($('#cfm').open){const m='Needs confirmation: '+$('#cfmt').textContent;$('#cfmn').click();await impSleep(30);const cn=$('#cancel');if($('#dlg').open)cn?cn.click():$('#dlg').close();return m}if(!$('#dlg').open)break}
+  if($('#dlg').open){const tt=$('#toast'),m=tt&&tt.classList.contains('show')&&tt.textContent?tt.textContent:'The record was not saved';const cn=$('#cancel');cn?cn.click():$('#dlg').close();return m}
+  return(D[t.key]||[]).length>before?'':'The record was not saved'}finally{document.body.classList.remove('importing')}}
+let IMPS=null;
+async function impOpen(type){const lab=type==='syscov'?'coverage supplements':F[type].label;IMPS={type,lab,cols:null,rows:null,busy:false};const d=$('#impd'),c=$('#impc');
+  c.innerHTML='<h2 style="margin:0;font-size:20px">Import '+esc(lab)+'</h2><p class="empty" style="margin:0">Checking the fields…</p>';if(!d.open)d.showModal();
+  const cols=await impColumns(type);if(!cols||!cols.length){c.innerHTML='<h2 style="margin:0;font-size:20px">Import '+esc(lab)+'</h2><p>Import isn’t available for this list.</p><div class="acts"><button class="btn" data-impx="close">Close</button></div>';return}
+  IMPS.cols=cols;impDraw()}
+function impDraw(extra){const S=IMPS,c=$('#impc');if(!S)return;
+  const req=S.cols.filter(x=>x.required).map(x=>x.label);
+  c.innerHTML=`<h2 style="margin:0;font-size:20px">Import ${esc(S.lab)}</h2>
+  <p style="margin:0;color:var(--mute);font-size:13px">Choose a CSV file. Each row is added as a new record; existing records are not changed. The first row must be column headings matching the field names below, and columns can be in any order. Rows that fail validation are skipped and listed afterwards.</p>
+  <div style="font-size:13px"><strong>Fields:</strong> ${S.cols.map(x=>esc(x.label)+(x.required?'<b title="Required"> *</b>':'')).join(', ')}</div>
+  ${S.stage==='run'?`<p id="impprog" style="margin:0">${esc(S.prog||'')}</p>`:''}
+  ${S.stage==='preview'?`<div style="font-size:13px;display:grid;gap:4px"><div><strong>${S.rows.length.toLocaleString()}</strong> row${S.rows.length===1?'':'s'} found in <em>${esc(S.fname||'')}</em>.</div><div>Recognised columns: ${S.map.map(m=>esc(m.label)).join(', ')||'<em>none</em>'}</div>${S.ignored.length?`<div style="color:var(--mute)">Ignored columns: ${S.ignored.map(esc).join(', ')}</div>`:''}${S.missing.length?`<div style="color:#b4281e">Required column${S.missing.length>1?'s':''} missing: ${S.missing.map(esc).join(', ')}</div>`:''}</div>`:''}
+  ${S.stage==='done'?`<div style="font-size:14px"><strong>${S.ok.toLocaleString()}</strong> imported${S.fail.length?`, <strong style="color:#b4281e">${S.fail.length.toLocaleString()}</strong> failed`:''}.</div>${S.fail.length?`<div class="wrap" style="max-height:220px;overflow:auto"><table><thead><tr><th style="width:70px">Row</th><th>Problem</th></tr></thead><tbody>${S.fail.slice(0,200).map(f=>`<tr><td>${f.n}</td><td style="white-space:normal">${esc(f.msg)}</td></tr>`).join('')}</tbody></table></div>${S.fail.length>200?`<div style="font-size:12px;color:var(--mute)">Showing the first 200. Download the failed rows for the full list.</div>`:''}`:''}`:''}
+  <input type="file" id="impf" accept=".csv,text/csv,text/plain" hidden>
+  <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost" data-impx="tpl"${S.stage==='run'?' disabled':''}>Download template</button>${S.stage==='done'&&S.fail.length?'<button class="btn ghost" data-impx="failed">Download failed rows</button>':''}<button class="btn ghost" data-impx="pick"${S.stage==='run'?' disabled':''}>${S.stage==='preview'?'Choose another file':'Choose file'}</button>${S.stage==='preview'&&!S.missing.length&&S.map.length?`<button class="btn" data-impx="go">Import ${S.rows.length.toLocaleString()} row${S.rows.length===1?'':'s'}</button>`:''}<button class="btn ghost" data-impx="close"${S.stage==='run'?' disabled':''}>${S.stage==='done'?'Close':'Cancel'}</button></div>`}
+function impLoad(file){const S=IMPS;if(!file||!S)return;const rd=new FileReader();rd.onload=()=>{const all=csvParse(rd.result);if(all.length<2){toast('That file has no data rows');return}
+  const head=all[0].map(h=>String(h).trim()),map=[],ignored=[];head.forEach((h,i)=>{const n=impNorm(h),c=S.cols.find(x=>impNorm(x.label)===n||impNorm(x.name)===n);if(c&&!map.some(m=>m.name===c.name))map.push({...c,i});else if(h)ignored.push(h)});
+  S.map=map;S.ignored=ignored;S.missing=S.cols.filter(x=>x.required&&!map.some(m=>m.name===x.name)).map(x=>x.label);S.rows=all.slice(1);S.head=head;S.fname=file.name;S.stage='preview';impDraw()};rd.readAsText(file)}
+async function impRun(){const S=IMPS;if(!S||S.busy)return;S.busy=true;S.stage='run';S.ok=0;S.fail=[];S.prog='Starting…';impDraw();
+  for(let i=0;i<S.rows.length;i++){const vals=S.rows[i];S.prog='Importing row '+(i+1).toLocaleString()+' of '+S.rows.length.toLocaleString()+'…';const pg=$('#impprog');if(pg)pg.textContent=S.prog;
+    let err='';if(S.type==='syscov'){const g=n=>{const m=S.map.find(x=>x.name===n);return m?String(vals[m.i]||'').trim():''};const r={id:uid(),from:g('from').toUpperCase().replace(/\s+/g,''),to:g('to').toUpperCase().replace(/\s+/g,''),supp:g('supp')===''?0:Math.round(parseFloat(g('supp').replace(/[£,]/g,''))*100)/100};if(isNaN(r.supp))err='Invalid supplement';else{const e=pcErr(r);if(e)err=e[1];else{sysCovRec().pcRanges.push(r);save()}}}else err=await impRow(S.type,S.map,vals);
+    if(err)S.fail.push({n:i+2,msg:err,vals});else S.ok++}
+  S.busy=false;S.stage='done';render();impDraw()}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-imp],[data-impx]');if(!b)return;e.preventDefault();e.stopPropagation();
+  if(b.dataset.imp){impOpen(b.dataset.imp);return}const a=b.dataset.impx,S=IMPS;
+  if(a==='close'){if(S&&S.busy)return;$('#impd').close();IMPS=null}
+  else if(a==='pick'){$('#impf').click()}
+  else if(a==='go')impRun();
+  else if(a==='tpl'&&S){xpExport({head:S.cols.map(x=>x.label),rows:[]},'Import template - '+S.lab)}
+  else if(a==='failed'&&S){const hd=[...(S.head||S.cols.map(x=>x.label)),'Error'];xpExport({head:hd,rows:S.fail.map(f=>[...hd.slice(0,-1).map((_,i)=>f.vals[i]||''),f.msg])},'Import failed rows - '+S.lab)}},true);
+document.addEventListener('change',e=>{if(e.target.id==='impf'){impLoad(e.target.files[0]);e.target.value=''}});
 function pagerHtml(key,n,p,pages){
   if(n<=PSIZES[0])return'';const a=(p-1)*PSZ+1,b=Math.min(n,p*PSZ),k=esc(key);
   const bt=(d,l,dis,t)=>`<button type="button" class="btn ghost" data-pgk="${k}" data-pgd="${d}" aria-label="${t}"${dis?' disabled':''}>${l}</button>`;
