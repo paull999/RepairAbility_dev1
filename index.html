@@ -42,7 +42,7 @@ main{padding:26px 30px;min-width:0}
 header.top{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
 h1{font-size:26px;letter-spacing:-.02em;margin:0 auto 0 0;font-weight:800}
 .btn{background:var(--acc);color:var(--acc-ink);border:0;padding:9px 16px;border-radius:var(--r);font-weight:700;cursor:pointer}
-.hl-cs{background:rgba(180,40,30,.10);border:2px solid #b4281e;border-radius:var(--r);padding:12px 14px}.hl-cs label{font-weight:700;font-size:15px}.imp{padding:4px 12px}body.importing #dlg{opacity:0}body.importing #dlg::backdrop{background:transparent}#impd table{font-size:13px}.xpbar{display:flex;justify-content:flex-end;margin:0 0 6px}.xp{padding:4px 12px}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.hl-cs{border:2px solid transparent;border-radius:var(--r);padding:12px 14px}.hl-cs:has(input:checked){background:rgba(180,40,30,.10);border-color:#b4281e}.hl-cs:has(input:checked) label{font-weight:700;font-size:15px;color:#b4281e}.imp{padding:4px 12px}body.importing #dlg{opacity:0}body.importing #dlg::backdrop{background:transparent}#impd table{font-size:13px}.xpbar{display:flex;justify-content:flex-end;margin:0 0 6px}.xp{padding:4px 12px}.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:transparent;color:var(--urgent);border:1px solid var(--urgent)}
 .in{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;width:100%}
 .top .in{width:auto;min-width:150px}
@@ -166,7 +166,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 339</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 340</span></div>
 </aside>
 <main id="main"></main>
 </div>
