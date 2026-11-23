@@ -69,6 +69,7 @@ pre{margin:8px 0 0;background:#0f1f1d;color:#d7ebe7;padding:12px;border-radius:8
     <div><label for="title">Title</label><input id="title"></div>
     <div><label for="cn">Customer name</label><input id="cn" value="Test Customer"></div>
     <div><label for="a1">Address line 1</label><input id="a1" value="1 High Street"></div>
+    <div><label for="ext">External job ID <span class="hint">(extRef)</span></label><div style="display:flex;gap:6px"><input id="ext" spellcheck="false"><button type="button" class="ghost" id="newext" title="Generate a new external job ID" style="padding:6px 10px">New</button></div></div>
   </div>
   <div class="bar"><button id="gen">Generate new job</button><span id="genst"></span></div>
   <div id="genmsg"></div>
@@ -106,6 +107,7 @@ pre{margin:8px 0 0;background:#0f1f1d;color:#d7ebe7;padding:12px;border-radius:8
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const stamp=()=>'TEST-'+new Date().toISOString().replace(/\D/g,'').slice(0,14)+'-'+Math.random().toString(36).slice(2,6);
 $('#title').value='TEST booking '+new Date().toLocaleTimeString('en-GB');
+$('#ext').value=stamp();$('#newext').onclick=()=>{$('#ext').value=stamp()};
 let LOGN=0,JOB=null,OPTS=[],lastKey='';
 
 async function api(fn,body){
@@ -140,12 +142,13 @@ $('#gen').onclick=async()=>{
   $('#gen').disabled=true;say('#genmsg',true,'');
   const r=await api('create-job',{orgName:$('#org').value.trim(),jobTypeName:$('#jt').value.trim(),title:$('#title').value.trim()||'TEST booking',
     custName:$('#cn').value.trim(),addr1:$('#a1').value.trim(),postcode:$('#pc').value.trim(),custEmail:'test@example.com',
-    notes:'Created by the booking API test harness',extRef:stamp()});
+    notes:'Created by the booking API test harness',extRef:$('#ext').value.trim()||stamp()});
   $('#gen').disabled=false;
   if(r.status===201||r.status===200){
     JOB=r.json;$('#n1').classList.add('done');$('#gjob').value=JOB.id;enable('#s2',true);
-    say('#genmsg',true,`Job <b>#${esc(JOB.number)}</b> created (id <code>${esc(JOB.id)}</code>). Now get its bookings in step 2.`);
-    $('#title').value='TEST booking '+new Date().toLocaleTimeString('en-GB');
+    say('#genmsg',true,JOB.duplicate?`A job with external job ID <code>${esc(JOB.extRef||$('#ext').value)}</code> already exists, so no new job was created: it is job <b>#${esc(JOB.number)}</b> (id <code>${esc(JOB.id)}</code>). Click <b>New</b> for a fresh external job ID.`
+      :`Job <b>#${esc(JOB.number)}</b> created (id <code>${esc(JOB.id)}</code>, external job ID <code>${esc($('#ext').value.trim())}</code>). Now get its bookings in step 2.`);
+    $('#title').value='TEST booking '+new Date().toLocaleTimeString('en-GB');$('#ext').value=stamp();
   }else say('#genmsg',false,err(r));
 };
 
