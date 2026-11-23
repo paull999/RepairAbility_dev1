@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>repairability – create-job test harness</title>
+<style>
+:root{--g:#123a36;--o:#d9822b;--line:#d6dcd9;--mute:#5d6f6b;--bg:#f4f6f5;--ok:#1d7a3a;--bad:#b4281e}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#1c2b28}
+header{background:var(--g);color:#fff;padding:14px 22px}
+header h1{margin:0;font-size:18px}header p{margin:2px 0 0;color:#b9cdc9;font-size:13px}
+main{max-width:1180px;margin:0 auto;padding:18px;display:grid;gap:16px;grid-template-columns:1fr 1fr}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px}
+section.full{grid-column:1/-1}
+h2{margin:0 0 10px;font-size:15px;color:var(--g)}
+label{display:block;font-size:12px;font-weight:600;color:var(--mute);margin:10px 0 3px}
+input,textarea,select{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+textarea{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;min-height:250px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--g);background:var(--g);color:#fff;cursor:pointer}
+button.ghost{background:#fff;color:var(--g)}button:disabled{opacity:.5;cursor:wait}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-weight:700;font-size:12px;color:#fff;background:var(--mute)}
+.pill.ok{background:var(--ok)}.pill.bad{background:var(--bad)}
+pre{margin:8px 0 0;background:#0f1f1d;color:#d7ebe7;padding:12px;border-radius:8px;overflow:auto;font-size:12.5px;max-height:320px;white-space:pre-wrap;word-break:break-word}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mute);font-size:12px}
+td.pass{color:var(--ok);font-weight:700}td.fail{color:var(--bad);font-weight:700}td.skip{color:var(--mute)}
+small,.hint{color:var(--mute);font-size:12px}
+.warn{background:#fff6e8;border:1px solid #f0cf9c;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>repairability – create-job test harness</h1>
+  <p>Send requests to the create-job web service from outside the app, and run a set of checks against it.</p>
+</header>
+<main>
+
+<section>
+  <h2>1. Connection</h2>
+  <label for="url">Endpoint (POST)</label>
+  <input id="url" value="https://widayxakhkwywbnacccn.supabase.co/functions/v1/create-job" spellcheck="false">
+  <label for="key">API key <span class="hint">(sent as the <code>x-api-key</code> header; kept only on this page)</span></label>
+  <input id="key" type="password" placeholder="ra_…" autocomplete="off" spellcheck="false">
+  <div class="row">
+    <div><label for="org">Customer organisation name</label><input id="org" placeholder="Exact name of an active customer"></div>
+    <div><label for="jt">Job type name</label><input id="jt" placeholder="Exact job type name"></div>
+  </div>
+  <div class="warn">Requests that succeed <b>create real jobs</b> in the database behind the endpoint. Test jobs are titled
+    <code>TEST harness …</code> and carry an <code>extRef</code> starting <code>TEST-</code> so you can find and delete them.</div>
+  <p class="hint">Keys are created in the Supabase SQL editor: <code>select * from public.ra_create_api_key('Test harness');</code></p>
+</section>
+
+<section>
+  <h2>2. Send a single request</h2>
+  <label for="body">JSON body</label>
+  <textarea id="body" spellcheck="false"></textarea>
+  <div class="bar">
+    <button id="send">Send</button>
+    <button class="ghost" id="fill">Fill valid example</button>
+    <button class="ghost" id="newref">New extRef</button>
+    <select id="method" style="width:auto"><option>POST</option><option>GET</option><option>OPTIONS</option></select>
+    <label style="display:inline-flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="nokey" style="width:auto"> omit API key</label>
+  </div>
+</section>
+
+<section class="full" id="resp">
+  <h2>3. Response</h2>
+  <div id="status"><span class="hint">Nothing sent yet.</span></div>
+  <pre id="out" hidden></pre>
+  <label>Equivalent curl</label>
+  <pre id="curl"></pre>
+</section>
+
+<section class="full">
+  <h2>4. Automated checks</h2>
+  <p class="hint">Each check sends a request and compares the status code (and body) with what the service should return.
+    Checks that create jobs only run when the box is ticked, and need the organisation, job type and API key above.</p>
+  <div class="bar" style="margin-top:0">
+    <button id="run">Run checks</button>
+    <label style="display:inline-flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="creates" style="width:auto"> include checks that create jobs (2 jobs)</label>
+    <span id="sum" class="hint"></span>
+  </div>
+  <table style="margin-top:10px"><thead><tr><th style="width:34%">Check</th><th>Expected</th><th>Got</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+</section>
+
+</main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stamp=()=>'TEST-'+new Date().toISOString().replace(/\D/g,'').slice(0,14)+'-'+Math.random().toString(36).slice(2,6);
+const valid=()=>({orgName:$('#org').value||'Acme Facilities',jobTypeName:$('#jt').value||'Boiler service',
+  title:'TEST harness '+new Date().toLocaleTimeString('en-GB'),custName:'Test Customer',custEmail:'test@example.com',custPhone:'07000 000000',
+  addr1:'1 High Street',town:'London',postcode:'SW1A 1AA',notes:'Created by the create-job test harness',extRef:stamp()});
+const pretty=o=>JSON.stringify(o,null,2);
+const hdrs=(nokey,extra)=>{const h={'Content-Type':'application/json',...(extra||{})};if(!nokey&&$('#key').value.trim())h['x-api-key']=$('#key').value.trim();return h};
+
+async function call(method,body,{nokey=false,key,raw}={}){
+  const headers=hdrs(nokey);if(key!==undefined){delete headers['x-api-key'];if(key)headers['x-api-key']=key}
+  const t0=performance.now();
+  try{
+    const r=await fetch($('#url').value.trim(),{method,headers,body:method==='POST'?(raw!==undefined?raw:JSON.stringify(body)):undefined});
+    const text=await r.text();let json=null;try{json=JSON.parse(text)}catch{}
+    return{status:r.status,ms:Math.round(performance.now()-t0),text,json,headers:[...r.headers].map(([k,v])=>k+': '+v).join('\n')};
+  }catch(e){return{status:0,ms:Math.round(performance.now()-t0),text:String(e),json:null,headers:'',netErr:true}}
+}
+
+function curlOf(method,bodyText,nokey){
+  const k=nokey||!$('#key').value.trim()?'':` \\\n  -H 'x-api-key: ${$('#key').value.trim()?'<your key>':''}'`;
+  return `curl -X ${method} '${$('#url').value.trim()}' \\\n  -H 'Content-Type: application/json'${k}`+(method==='POST'?` \\\n  -d '${bodyText.replace(/'/g,"'\\''").replace(/\n\s*/g,' ')}'`:'');
+}
+
+function show(res,method,bodyText,nokey){
+  const ok=res.status>=200&&res.status<300;
+  $('#status').innerHTML=res.netErr?`<span class="pill bad">No response</span> <small>${esc(res.text)}<br>Check the URL and your connection.</small>`
+    :`<span class="pill ${ok?'ok':'bad'}">${res.status}</span> <small>${res.ms} ms</small>`;
+  $('#out').hidden=false;
+  $('#out').textContent=(res.json?pretty(res.json):res.text||'(empty body)')+(res.headers?'\n\n— response headers —\n'+res.headers:'');
+  $('#curl').textContent=curlOf(method,bodyText,nokey);
+  $('#resp').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+$('#body').value=pretty(valid());
+let edited=false;$('#body').addEventListener('input',()=>{edited=true});['#org','#jt'].forEach(i=>$(i).addEventListener('input',()=>{if(!edited)$('#body').value=pretty(valid())}));
+$('#fill').onclick=()=>{edited=false;$('#body').value=pretty(valid())};
+$('#newref').onclick=()=>{try{const o=JSON.parse($('#body').value);o.extRef=stamp();$('#body').value=pretty(o)}catch{alert('The body is not valid JSON, so the extRef could not be changed.')}};
+$('#send').onclick=async()=>{
+  const b=$('#send');b.disabled=true;const method=$('#method').value,text=$('#body').value,nokey=$('#nokey').checked;
+  const res=await call(method,null,{nokey,raw:text});show(res,method,text,nokey);b.disabled=false};
+
+/* ---- automated checks ---- */
+async function runChecks(){
+  const run=$('#run');run.disabled=true;const rows=$('#rows');rows.innerHTML='';
+  let pass=0,fail=0,skip=0;
+  const haveKey=!!$('#key').value.trim(),haveRefs=!!($('#org').value.trim()&&$('#jt').value.trim()),creates=$('#creates').checked;
+  const add=(name,expected,got,state)=>{
+    rows.insertAdjacentHTML('beforeend',`<tr><td>${esc(name)}</td><td>${esc(expected)}</td><td>${esc(got)}</td><td class="${state}">${state==='pass'?'PASS':state==='fail'?'FAIL':'SKIPPED'}</td></tr>`);
+    state==='pass'?pass++:state==='fail'?fail++:skip++;$('#sum').textContent=`${pass} passed, ${fail} failed, ${skip} skipped`};
+  const chk=async(name,expected,exec,test)=>{
+    const r=await exec();const okk=test(r);
+    add(name,expected,r.netErr?'no response':r.status+(r.json&&r.json.error?' – '+r.json.error:r.json&&r.json.id?' – job '+r.json.number:''),okk?'pass':'fail');return r};
+  const need=(name,expected,why)=>add(name,expected,why,'skip');
+  const v=()=>valid();const withKey=(b)=>call('POST',b);
+
+  await chk('Preflight (OPTIONS) allowed from another origin','204',()=>call('OPTIONS'),r=>r.status===204);
+  await chk('GET is refused','405',()=>call('GET'),r=>r.status===405);
+  await chk('Missing API key','401',()=>call('POST',v(),{nokey:true}),r=>r.status===401);
+  await chk('Wrong API key','401',()=>call('POST',v(),{key:'ra_not-a-real-key'}),r=>r.status===401);
+  await chk('Body is not JSON','400 (or 401 without a key)',()=>call('POST',null,{raw:'this is not json',key:haveKey?undefined:'ra_x'}),r=>haveKey?r.status===400:r.status===401);
+  await chk('Body is a JSON array','400 (or 401 without a key)',()=>call('POST',null,{raw:'[1,2]',key:haveKey?undefined:'ra_x'}),r=>haveKey?r.status===400:r.status===401);
+
+  if(!haveKey){['Missing title','Missing customer name','Missing address line 1','Missing postcode','Postcode not valid','Email not valid','Organisation not found','Job type not found','Neither org nor orgName given','Neither jobType nor jobTypeName given','Title longer than 200 characters']
+    .forEach(n=>need(n,'422','needs an API key'));}
+  else{
+    const bad=(mut)=>()=>{const b=v();mut(b);return withKey(b)};
+    const is422=r=>r.status===422;
+    await chk('Missing title','422',bad(b=>{delete b.title}),is422);
+    await chk('Missing customer name','422',bad(b=>{delete b.custName}),is422);
+    await chk('Missing address line 1','422',bad(b=>{delete b.addr1}),is422);
+    await chk('Missing postcode','422',bad(b=>{delete b.postcode}),is422);
+    await chk('Postcode not valid','422',bad(b=>{b.postcode='ZZ99 9ZZ9'}),is422);
+    await chk('Email not valid','422',bad(b=>{b.custEmail='not-an-email'}),is422);
+    await chk('Organisation not found','422',bad(b=>{b.orgName='No such organisation '+stamp()}),is422);
+    await chk('Job type not found','422',bad(b=>{b.jobTypeName='No such job type '+stamp()}),is422);
+    await chk('Neither org nor orgName given','422',bad(b=>{delete b.orgName;delete b.org}),is422);
+    await chk('Neither jobType nor jobTypeName given','422',bad(b=>{delete b.jobTypeName;delete b.jobType}),is422);
+    await chk('Title longer than 200 characters','422',bad(b=>{b.title='x'.repeat(201)}),is422);
+  }
+
+  if(!creates)need('Valid job is created','201','tick “include checks that create jobs”');
+  else if(!haveKey||!haveRefs)need('Valid job is created','201','needs an API key, organisation and job type');
+  if(!creates)need('Same extRef again returns the same job','200, duplicate true, same id','tick “include checks that create jobs”');
+  else if(!haveKey||!haveRefs)need('Same extRef again returns the same job','200, duplicate true, same id','needs an API key, organisation and job type');
+  if(creates&&haveKey&&haveRefs){
+    const b=v();
+    const r1=await chk('Valid job is created','201 with id and number',()=>withKey(b),r=>r.status===201&&r.json&&r.json.id&&r.json.number&&r.json.duplicate===false);
+    if(r1.status===201)await chk('Same extRef again returns the same job','200, duplicate true, same id',()=>withKey(b),r=>r.status===200&&r.json&&r.json.duplicate===true&&r.json.id===r1.json.id);
+    else need('Same extRef again returns the same job','200, duplicate true, same id','first job was not created');
+  }
+  $('#sum').textContent=`${pass} passed, ${fail} failed, ${skip} skipped`;
+  run.disabled=false;
+}
+$('#run').onclick=runChecks;
+</script>
+</body>
+</html>

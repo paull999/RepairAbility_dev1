@@ -24,8 +24,7 @@ Deploy the function with `supabase functions deploy create-job --no-verify-jwt`.
 | `extRef` | no | Your own reference. Sending the same `extRef` again for the same organisation returns the existing job instead of creating another |
 | `custEmail`, `custPhone`, `addr2`, `town`, `county`, `notes`, `minutes` | no | `minutes` defaults from the job type |
 
-The job is created with status **New**, the next job number, and the job limit and basis
-taken from the organisation's Job Auth settings.
+The job is created with status **New** and the next job number.
 
 ## Responses
 
@@ -43,3 +42,9 @@ taken from the organisation's Job Auth settings.
       -H 'x-api-key: ra_...' -H 'Content-Type: application/json' \
       -d '{"orgName":"Acme Facilities","jobTypeName":"Boiler service","title":"Leaking tap",
            "custName":"A Customer","addr1":"1 High St","postcode":"SW1A 1AA","extRef":"CRM-7731"}'
+
+## Test harness
+
+Open `create-job-test.html` (also served next to the app) to send requests to this service from a browser and run a set of
+checks: missing or wrong key, wrong method, bad JSON, each missing or invalid field, unknown organisation or job type,
+and (optionally) creating a job and repeating its `extRef`. Test jobs have an `extRef` starting `TEST-`.
