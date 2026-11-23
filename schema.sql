@@ -288,14 +288,6 @@ begin
     end if;
   end if;
 
-  -- Job limit from the organisation's Job Auth settings (same rules as the app).
-  al := coalesce(org->>'authLimit', 'No Limit');
-  if al = 'Job Limit' then
-    lim := coalesce(nullif(org->>'jobLimit','')::numeric, 100); basis := coalesce(org->>'limitType', 'Job Total');
-  elsif al = 'Job Type Limit' then
-    lim := coalesce(nullif((org->'jobTypeLimits')->>(jt->>'id'),'')::numeric, 100); basis := coalesce(org->>'limitType', 'Job Total');
-  end if;
-
   mins := coalesce(nullif(p->>'minutes','')::numeric, nullif(jt->>'minutes','')::numeric);
   num := public.ra_next_job_number();
   jid := 'x' || substr(encode(gen_random_bytes(8), 'hex'), 1, 10);
@@ -307,7 +299,6 @@ begin
     'addr1', a1, 'addr2', btrim(coalesce(p->>'addr2','')), 'town', btrim(coalesce(p->>'town','')),
     'county', btrim(coalesce(p->>'county','')), 'postcode', pc,
     'notes', coalesce(p->>'notes',''), 'jobPrice', null,
-    'jobLimit', to_jsonb(lim), 'jobLimitBasis', basis,
     'created', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
     'events', '[]'::jsonb);
   insert into public.docs (path, coll, id, data) values ('jobs/' || jid, 'jobs', jid, j);
@@ -405,3 +396,35 @@ create policy ra_photos_del on storage.objects for delete to authenticated
 -- Person type and job history removed; job events replace history
 update public.docs set data = data - 'personType' where coll='users' and data ? 'personType';
 update public.docs set data = data - 'history' where coll='jobs' and data ? 'history';
+
+-- ---------------------------------------------------------------------------
+-- Booking options handed out by the get-bookings Edge Function. Each option has
+-- its own unique key; confirm-booking uses the key to book the job. Service role only.
+-- ---------------------------------------------------------------------------
+create table if not exists public.ra_booking_options (
+  key        text primary key,
+  job_id     text not null,
+  sorg       text not null,
+  book_date   text not null default '',
+  book_window text not null default '',
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists ra_booking_options_job_idx on public.ra_booking_options (job_id);
+alter table public.ra_booking_options enable row level security;
+revoke all on public.ra_booking_options from public, anon, authenticated;
+
+-- Is this an active API key? (Same keys as create-job.) Marks it as used.
+create or replace function public.ra_api_check_key(p_key text) returns boolean
+language plpgsql security definer set search_path = public, extensions as $$
+declare kid uuid;
+begin
+  select id into kid from public.ra_api_keys
+   where active and key_hash = encode(digest(coalesce(p_key,''), 'sha256'), 'hex');
+  if kid is null then return false; end if;
+  update public.ra_api_keys set last_used = now() where id = kid;
+  return true;
+end $$;
+revoke all on function public.ra_api_check_key(text) from public, anon, authenticated;
+grant execute on function public.ra_api_check_key(text) to service_role;
+

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>repairability – booking API test harness</title>
+<style>
+:root{--g:#123a36;--o:#d9822b;--line:#d6dcd9;--mute:#5d6f6b;--bg:#f4f6f5;--ok:#1d7a3a;--bad:#b4281e}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#1c2b28}
+header{background:var(--g);color:#fff;padding:14px 22px}
+header h1{margin:0;font-size:18px}header p{margin:2px 0 0;color:#b9cdc9;font-size:13px}
+header a{color:#f3c487}
+main{max-width:1100px;margin:0 auto;padding:18px;display:grid;gap:16px}
+section{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px}
+section.off{opacity:.55}
+h2{margin:0 0 4px;font-size:15px;color:var(--g)}
+h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;background:var(--g);color:#fff;font-size:12px;margin-right:6px}
+h2 .n.done{background:var(--ok)}
+.sub{margin:0 0 10px;color:var(--mute);font-size:13px}
+label{display:block;font-size:12px;font-weight:600;color:var(--mute);margin:10px 0 3px}
+input,select{width:100%;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 12px}
+button{font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--g);background:var(--g);color:#fff;cursor:pointer}
+button.ghost{background:#fff;color:var(--g)}button:disabled{opacity:.5;cursor:not-allowed}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-weight:700;font-size:12px;color:#fff;background:var(--mute)}
+.pill.ok{background:var(--ok)}.pill.bad{background:var(--bad)}
+.msg{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:13px;background:#eef3f2}
+.msg.ok{background:#e7f4ea;color:#14562a}.msg.bad{background:#fbe9e7;color:#8a1f16}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--mute);font-size:12px}
+tr.sel{background:#e5f0ee}tbody tr{cursor:pointer}
+code,.key{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.key{color:var(--mute);word-break:break-all}
+.cards{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.card{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px}
+.card small{display:block;color:var(--mute)}
+details{margin-top:10px}summary{cursor:pointer;color:var(--g);font-weight:600;font-size:13px}
+pre{margin:8px 0 0;background:#0f1f1d;color:#d7ebe7;padding:12px;border-radius:8px;overflow:auto;font-size:12.5px;max-height:300px;white-space:pre-wrap;word-break:break-word}
+.warn{background:#fff6e8;border:1px solid #f0cf9c;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:10px}
+.hint{color:var(--mute);font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>repairability – booking API test harness</h1>
+  <p>Create a job, ask for its booking options (get-bookings), then confirm one (confirm-booking). Also see the <a href="create-job-test.html">create-job harness</a>.</p>
+</header>
+<main>
+
+<section id="s0">
+  <h2>Connection</h2>
+  <div class="grid">
+    <div><label for="base">Functions base URL</label><input id="base" value="https://widayxakhkwywbnacccn.supabase.co/functions/v1" spellcheck="false"></div>
+    <div><label for="key">API key <span class="hint">(x-api-key; kept only on this page)</span></label><input id="key" type="password" placeholder="ra_…" autocomplete="off" spellcheck="false"></div>
+  </div>
+  <div class="warn">This works on real data: it creates a job and books it for a real servicer in the database behind the URL. Test jobs are titled <code>TEST booking …</code>.</div>
+</section>
+
+<section id="s1">
+  <h2><span class="n" id="n1">1</span>Generate a new job</h2>
+  <p class="sub">Uses the create-job API. The customer needs an agreed price for the job type, and servicers who cover the postcode and have the skills, or there will be nothing to book.</p>
+  <div class="grid">
+    <div><label for="org">Customer organisation name</label><input id="org" placeholder="Exact name of an active customer"></div>
+    <div><label for="jt">Job type name</label><input id="jt" placeholder="Exact job type name"></div>
+    <div><label for="pc">Postcode</label><input id="pc" value="CB1 1AH"></div>
+    <div><label for="title">Title</label><input id="title"></div>
+    <div><label for="cn">Customer name</label><input id="cn" value="Test Customer"></div>
+    <div><label for="a1">Address line 1</label><input id="a1" value="1 High Street"></div>
+  </div>
+  <div class="bar"><button id="gen">Generate new job</button><span id="genst"></span></div>
+  <div id="genmsg"></div>
+</section>
+
+<section id="s2" class="off">
+  <h2><span class="n" id="n2">2</span>Get bookings</h2>
+  <p class="sub">Returns the servicers who can do the job and a list of booking options, as the Book button on the job shows. Every option has its own key.</p>
+  <div class="grid">
+    <div><label for="gjob">Job (id or number)</label><input id="gjob" placeholder="from step 1, or type a job id / number"></div>
+    <div><label for="gsv">Only this servicer <span class="hint">(optional)</span></label><select id="gsv"><option value="">All servicers</option></select></div>
+  </div>
+  <div class="bar"><button id="get">Get bookings</button><span id="getst"></span></div>
+  <div id="getmsg"></div>
+  <div id="cards" class="cards"></div>
+  <div id="optwrap"></div>
+</section>
+
+<section id="s3" class="off">
+  <h2><span class="n" id="n3">3</span>Confirm booking</h2>
+  <p class="sub">Click an option above (or paste any key below), then confirm. The job becomes <b>Booked</b> with that servicer, date and booking window, exactly as if booked in the app.</p>
+  <label for="ckey">Booking key</label><input id="ckey" class="key" placeholder="bk_…" spellcheck="false">
+  <div class="bar"><button id="conf">Confirm booking</button><button class="ghost" id="again" disabled>Confirm the same key again</button><span id="confst"></span></div>
+  <div id="confmsg"></div>
+</section>
+
+<section>
+  <h2>Request log</h2>
+  <p class="sub">Every call this page makes, with the equivalent curl.</p>
+  <div id="log"><span class="hint">Nothing sent yet.</span></div>
+</section>
+
+</main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stamp=()=>'TEST-'+new Date().toISOString().replace(/\D/g,'').slice(0,14)+'-'+Math.random().toString(36).slice(2,6);
+$('#title').value='TEST booking '+new Date().toLocaleTimeString('en-GB');
+let LOGN=0,JOB=null,OPTS=[],lastKey='';
+
+async function api(fn,body){
+  const url=$('#base').value.trim().replace(/\/+$/,'')+'/'+fn,key=$('#key').value.trim();
+  const headers={'Content-Type':'application/json',...(key?{'x-api-key':key}:{})};
+  const t0=performance.now();let res;
+  try{
+    const r=await fetch(url,{method:'POST',headers,body:JSON.stringify(body)});
+    const text=await r.text();let json=null;try{json=JSON.parse(text)}catch{}
+    res={status:r.status,json,text};
+  }catch(e){res={status:0,json:null,text:String(e)}}
+  res.ms=Math.round(performance.now()-t0);
+  log(fn,url,body,res,key);return res;
+}
+function log(fn,url,body,res,key){
+  LOGN++;if(LOGN===1)$('#log').innerHTML='';
+  const ok=res.status>=200&&res.status<300;
+  const curl=`curl -X POST '${url}' \\\n  -H 'Content-Type: application/json'${key?" \\\n  -H 'x-api-key: <your key>'":''} \\\n  -d '${JSON.stringify(body).replace(/'/g,"'\\''")}'`;
+  const d=document.createElement('details');d.open=LOGN===1||false;
+  d.innerHTML=`<summary>${LOGN}. ${esc(fn)} <span class="pill ${ok?'ok':'bad'}">${res.status||'no response'}</span> <span class="hint">${res.ms} ms</span></summary><pre>${esc(res.json?JSON.stringify(res.json,null,2):res.text)}</pre><pre>${esc(curl)}</pre>`;
+  $('#log').prepend(d);
+}
+const say=(id,ok,text)=>{$(id).innerHTML=text?`<div class="msg ${ok?'ok':'bad'}">${text}</div>`:''};
+const err=r=>r.status===0?'No response – check the URL and your connection ('+esc(r.text)+')':esc((r.json&&r.json.error)||r.text)+' <span class="hint">(HTTP '+r.status+')</span>';
+const enable=(id,on)=>$(id).classList.toggle('off',!on);
+const fdate=d=>d?new Date(d+'T12:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'No date';
+
+/* 1 – generate */
+$('#gen').onclick=async()=>{
+  if(!$('#key').value.trim()){say('#genmsg',false,'Enter your API key first.');return}
+  if(!$('#org').value.trim()||!$('#jt').value.trim()){say('#genmsg',false,'Enter the customer organisation and job type names.');return}
+  $('#gen').disabled=true;say('#genmsg',true,'');
+  const r=await api('create-job',{orgName:$('#org').value.trim(),jobTypeName:$('#jt').value.trim(),title:$('#title').value.trim()||'TEST booking',
+    custName:$('#cn').value.trim(),addr1:$('#a1').value.trim(),postcode:$('#pc').value.trim(),custEmail:'test@example.com',
+    notes:'Created by the booking API test harness',extRef:stamp()});
+  $('#gen').disabled=false;
+  if(r.status===201||r.status===200){
+    JOB=r.json;$('#n1').classList.add('done');$('#gjob').value=JOB.id;enable('#s2',true);
+    say('#genmsg',true,`Job <b>#${esc(JOB.number)}</b> created (id <code>${esc(JOB.id)}</code>). Now get its bookings in step 2.`);
+    $('#title').value='TEST booking '+new Date().toLocaleTimeString('en-GB');
+  }else say('#genmsg',false,err(r));
+};
+
+/* 2 – get bookings */
+$('#get').onclick=async()=>{
+  const j=$('#gjob').value.trim();
+  if(!j){say('#getmsg',false,'Enter a job id or number, or generate a job in step 1.');return}
+  if(!$('#key').value.trim()){say('#getmsg',false,'Enter your API key first.');return}
+  $('#get').disabled=true;
+  const body=/^\d+$/.test(j)?{jobNumber:+j}:{job:j};if($('#gsv').value)body.servicer=$('#gsv').value;
+  const r=await api('get-bookings',body);$('#get').disabled=false;
+  $('#cards').innerHTML='';$('#optwrap').innerHTML='';OPTS=[];
+  if(r.status!==200){say('#getmsg',false,err(r));return}
+  const d=r.json;OPTS=d.bookings;$('#n2').classList.add('done');enable('#s3',true);
+  const sel=$('#gsv'),keep=sel.value;
+  if(!keep)sel.innerHTML='<option value="">All servicers</option>'+d.servicers.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
+  say('#getmsg',true,`Job <b>#${esc(d.job.number)}</b> (${esc(d.job.jobType)}, ${esc(d.job.postcode)}) is <b>${esc(d.job.status)}</b>. ${d.servicers.length} servicer${d.servicers.length===1?'':'s'} can do it; ${d.bookings.length} booking option${d.bookings.length===1?'':'s'} returned, valid until ${esc(new Date(d.expiresAt).toLocaleString('en-GB'))}.`);
+  $('#cards').innerHTML=d.servicers.map(s=>`<div class="card"><b>${esc(s.name)}</b><small>${esc(s.bookTo)}</small><small>${s.bookTo==='Assign only'?'No date needed':s.earliestDate?'Earliest '+esc(fdate(s.earliestDate)):'No dates available'}</small></div>`).join('');
+  $('#optwrap').innerHTML=d.bookings.length?`<table><thead><tr><th>Servicer</th><th>Date</th><th>Booking window</th><th>Already booked</th><th>Key</th></tr></thead><tbody>${d.bookings.map((b,i)=>`<tr data-i="${i}"><td>${esc(b.servicer)}</td><td>${b.date?esc(fdate(b.date)):'No date'}</td><td>${b.bookTo==='Assign only'?'Assign only':b.bookingWindow?esc(b.bookingWindow):'Any time'}</td><td>${b.alreadyBooked==null?'–':b.alreadyBooked||'None'}</td><td class="key">${esc(b.key)}</td></tr>`).join('')}</tbody></table>`:'<p class="hint">No booking options were returned.</p>';
+};
+$('#optwrap').onclick=e=>{const tr=e.target.closest('tr[data-i]');if(!tr)return;
+  document.querySelectorAll('#optwrap tr').forEach(x=>x.classList.remove('sel'));tr.classList.add('sel');$('#ckey').value=OPTS[+tr.dataset.i].key;say('#confmsg',true,'');};
+
+/* 3 – confirm */
+async function confirm(key){
+  if(!key){say('#confmsg',false,'Choose an option above, or paste a booking key.');return}
+  if(!$('#key').value.trim()){say('#confmsg',false,'Enter your API key first.');return}
+  $('#conf').disabled=true;$('#again').disabled=true;
+  const r=await api('confirm-booking',{key});$('#conf').disabled=false;
+  if(r.status===200){
+    lastKey=key;$('#again').disabled=false;$('#n3').classList.add('done');const b=r.json.booking;
+    say('#confmsg',true,`Job <b>#${esc(r.json.job.number)}</b> is now <b>${esc(r.json.job.status)}</b> with <b>${esc(b.servicer)}</b>${b.date?' on <b>'+esc(fdate(b.date))+'</b>':' (assigned, no date)'}${b.bookingWindow?' · '+esc(b.bookingWindow):''}. Check it in the app.`);
+  }else{$('#again').disabled=!lastKey;say('#confmsg',false,err(r))}
+}
+$('#conf').onclick=()=>confirm($('#ckey').value.trim());
+$('#again').onclick=()=>confirm(lastKey);
+</script>
+</body>
+</html>
