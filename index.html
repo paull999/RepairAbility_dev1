@@ -166,7 +166,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 350</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 351</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -218,7 +218,7 @@ function xpExport(data,title){if(!data||!data.head.length){toast('Nothing to exp
   const nm='RepairAbility - '+title.replace(/[\\/:*?"<>|]+/g,'').trim()+' - '+new Date().toISOString().slice(0,10)+'.csv';
   saveBytes(nm,new TextEncoder().encode(csv));toast('Exporting '+data.rows.length.toLocaleString()+' row'+(data.rows.length===1?'':'s'))}
 function impScan(){document.querySelectorAll('#main header.top').forEach(h=>{if(h.querySelector('.imp'))return;const nb=h.querySelector('[data-new]')||h.querySelector('[data-edit=syscov]');if(!nb)return;const b=document.createElement('button');b.type='button';b.className='btn ghost imp';b.textContent='Import';b.title='Import records from a CSV file';b.dataset.imp=nb.dataset.new||'syscov';h.insertBefore(b,nb)})}
-function xpScan(){impScan();document.querySelectorAll('#main table,#dlg table').forEach(t=>{if(t.dataset.xp||t.closest('#cols,#jsd,#invd,#bkd'))return;if(!t.tHead||!t.tBodies[0])return;t.dataset.xp='1';
+function xpScan(){impScan();document.querySelectorAll('#main table,#dlg table').forEach(t=>{if(t.dataset.xp||t.closest('#cols,#jsd,#invd,#bkd'))return;if(t.closest('#dlg')&&$('#dlg').querySelector('[data-tab-btn="Events"]')){t.dataset.xp='1';return}if(!t.tHead||!t.tBodies[0])return;t.dataset.xp='1';
   if(V.view==='jobs'&&t.classList.contains('sheet')&&t.closest('#main'))return;
   const w=t.closest('.wrap')||t;let hd=null,e=w.previousElementSibling,k=0;while(e&&k<6&&!hd){if(e.matches('header.top'))hd=e;e=e.previousElementSibling;k++}
   const b=document.createElement('button');b.type='button';b.className='btn ghost xp';b.textContent='Export';b.title='Export this list to a CSV file';b._t=t;
