@@ -168,7 +168,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <div style="padding:0 12px 8px"><button class="btn ghost" id="tem" type="button" style="width:100%;color:inherit;border-color:rgba(255,255,255,.25)">Test Email</button></div>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 360</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 361</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -259,7 +259,7 @@ async function emailServicer(j){const m=allocMsg(j),cloud=!!window.SB;
       else toast('Allocation email sent to '+m.name)}
     catch(e){await fail((e&&e.message)||'The email could not be sent')}};
   return new Promise(res=>{
-    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">${cloud?'Job '+esc(String(j.number))+' has been allocated to '+esc(m.name)+'. Check the email below, then confirm that you want it sent.':'This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.'}</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end">${cloud?'<button type="button" class="btn ghost" id="pvx">Don’t send</button><button type="button" class="btn" id="pvn">Send email</button>':'<button type="button" class="btn" id="pvn">Close</button>'}</div>`;
+    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">${cloud?'Job '+esc(String(j.number))+' has been allocated to '+esc(m.name)+'. Check the email below, then confirm that you want it sent.':'This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.'}</p><p style="margin:0 0 2px"><strong>From:</strong> ${esc(TEST_FROM)}</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end">${cloud?'<button type="button" class="btn ghost" id="pvx">Don’t send</button><button type="button" class="btn" id="pvn">Send email</button>':'<button type="button" class="btn" id="pvn">Close</button>'}</div>`;
     let go=false;
     $('#pvn').onclick=()=>{go=cloud;$('#pv').close()};const x=$('#pvx');if(x)x.onclick=()=>$('#pv').close();
     $('#pv').addEventListener('close',async()=>{if(go)await doSend();res()},{once:true});if(!$('#pv').open)$('#pv').showModal()})}
