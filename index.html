@@ -248,17 +248,18 @@ function allocMsg(j){const o=orgn(j.sorg),c=orgn(j.org),t=D.jobTypes.find(x=>x.i
   const when=j.date?fmt(j.date)+(bw?' ('+bw+')':''):'Not yet dated';
   return{name:o?o.name:'',to:o&&o.email?o.email.trim():'',subject:'Job '+j.number+' allocated to you: '+(j.title||''),
     body:['Hello '+(o?o.name:'')+',','','Job '+j.number+' has been allocated to you.','','Job: '+(j.title||''),'Customer: '+(c?c.name:''),'Job type: '+(t?t.name:''),'Address: '+jaddr(j),'Date: '+when,'','Open the job: '+jobLink(j),'','Sign in to repairability to see the full details.'].join('\n')}}
-async function emailServicer(j){const m=allocMsg(j);
-  if(window.SB){
-    if(!m.to){toast(m.name+' has no email address saved, so no allocation email was sent');return}
+async function emailServicer(j){const m=allocMsg(j),cloud=!!window.SB;
+  if(cloud&&!m.to){toast(m.name+' has no email address saved, so no allocation email was sent');return}
+  const doSend=async()=>{
     try{const{error}=await SB.functions.invoke('send-message',{body:{channel:'Email',to:m.to,subject:m.subject,body:m.body}});
       if(error){let msg=error.message||'The email could not be sent';try{const x=await error.context.json();if(x&&x.error)msg=x.error}catch(e){}toast('Allocation email to '+m.name+' not sent: '+msg)}
       else toast('Allocation email sent to '+m.name)}
-    catch(e){toast('Allocation email to '+m.name+' not sent')}
-    return}
+    catch(e){toast('Allocation email to '+m.name+' not sent')}};
   return new Promise(res=>{
-    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn" id="pvn">Close</button></div>`;
-    $('#pvn').onclick=()=>$('#pv').close();$('#pv').addEventListener('close',()=>res(),{once:true});if(!$('#pv').open)$('#pv').showModal()})}
+    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">${cloud?'Job '+esc(String(j.number))+' has been allocated to '+esc(m.name)+'. Check the email below, then confirm that you want it sent.':'This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.'}</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end">${cloud?'<button type="button" class="btn ghost" id="pvx">Don’t send</button><button type="button" class="btn" id="pvn">Send email</button>':'<button type="button" class="btn" id="pvn">Close</button>'}</div>`;
+    let go=false;
+    $('#pvn').onclick=()=>{go=cloud;$('#pv').close()};const x=$('#pvx');if(x)x.onclick=()=>$('#pv').close();
+    $('#pv').addEventListener('close',async()=>{if(go)await doSend();res()},{once:true});if(!$('#pv').open)$('#pv').showModal()})}
 let DEEPJOB=new URLSearchParams(location.search).get('job'),DEEPTRY=0;
 function openDeepJob(){if(!DEEPJOB||!ME)return;const j=D.jobs.find(x=>x.id===DEEPJOB);
   if(j&&myJobs().some(x=>x.id===j.id)){const id=DEEPJOB;DEEPJOB=null;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}V.view='jobs';render();openForm('job',id);return}
