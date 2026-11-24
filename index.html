@@ -165,10 +165,9 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
 <aside>
   <div class="brand"><svg class="mk" viewBox="0 0 138 130" aria-hidden="true"><path class="l" d="M62 5A57 57 0 0 0 62 119Z"/><path class="o" d="M75 11A57 57 0 0 1 75 125Z"/><rect class="s" x="45" y="59" width="58" height="20" rx="10"/></svg><span>repair<i>ability</i></span></div>
   <nav id="nav"></nav>
-  <div style="padding:0 12px 8px"><button class="btn ghost" id="tem" type="button" style="width:100%;color:inherit;border-color:rgba(255,255,255,.25)">Test Email</button></div>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 362</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 363</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -259,7 +258,7 @@ async function emailServicer(j){const m=allocMsg(j),cloud=!!window.SB;
       else toast('Allocation email sent to '+m.name)}
     catch(e){await fail((e&&e.message)||'The email could not be sent')}};
   return new Promise(res=>{
-    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">${cloud?'Job '+esc(String(j.number))+' has been allocated to '+esc(m.name)+'. Check the email below, then confirm that you want it sent.':'This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.'}</p><p style="margin:0 0 2px"><strong>From:</strong> ${esc(TEST_FROM)}</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end">${cloud?'<button type="button" class="btn ghost" id="pvx">Don’t send</button><button type="button" class="btn" id="pvn">Send email</button>':'<button type="button" class="btn" id="pvn">Close</button>'}</div>`;
+    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">${cloud?'Job '+esc(String(j.number))+' has been allocated to '+esc(m.name)+'. Check the email below, then confirm that you want it sent.':'This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.'}</p><p style="margin:0 0 2px"><strong>From:</strong> ${esc(MAIL_FROM_ADDR)}</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end">${cloud?'<button type="button" class="btn ghost" id="pvx">Don’t send</button><button type="button" class="btn" id="pvn">Send email</button>':'<button type="button" class="btn" id="pvn">Close</button>'}</div>`;
     let go=false;
     $('#pvn').onclick=()=>{go=cloud;$('#pv').close()};const x=$('#pvx');if(x)x.onclick=()=>$('#pv').close();
     $('#pv').addEventListener('close',async()=>{if(go)await doSend();res()},{once:true});if(!$('#pv').open)$('#pv').showModal()})}
@@ -268,21 +267,7 @@ function openDeepJob(){if(!DEEPJOB||!ME)return;const j=D.jobs.find(x=>x.id===DEE
   if(j&&myJobs().some(x=>x.id===j.id)){const id=DEEPJOB;DEEPJOB=null;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}V.view='jobs';render();openForm('job',id);return}
   if(++DEEPTRY<20)setTimeout(openDeepJob,500);else{DEEPJOB=null;toast('That job could not be found, or you do not have access to it')}}
 
-/* ---- Test Email button ---- */
-const TEST_TO='paul.lucas@outlook.com',TEST_FROM='noreply@repairability.co.uk';
-function testEmail(){const cloud=!!window.SB,now=new Date(),ref=Math.random().toString(36).slice(2,8).toUpperCase();
-  const m={to:TEST_TO,from:TEST_FROM,subject:'repairability test email '+ref,body:['Hello,','','This is a test email from repairability.','','Sent: '+now.toLocaleString('en-GB'),'Sent by: '+(ME?ME.name:''),'Reference: '+ref,'App: '+appUrl(),'','If you received this, email sending is working.'].join('\n')};
-  const box=h=>{$('#pvc').innerHTML=h;if(!$('#pv').open)$('#pv').showModal()};
-  const fail=msg=>{box(`<h2 style="margin:0 0 4px;font-size:20px">Email not sent</h2><p style="margin:0 0 12px;color:var(--mute)">The test email to ${esc(m.to)} could not be sent.</p><p style="margin:0 0 14px;color:var(--urgent)"><strong>Error:</strong> ${esc(msg)}</p><div style="display:flex;justify-content:flex-end"><button type="button" class="btn" id="pvn">Close</button></div>`);$('#pvn').onclick=()=>$('#pv').close()};
-  box(`<h2 style="margin:0 0 4px;font-size:20px">Test email</h2><p style="margin:0 0 12px;color:var(--mute)">${cloud?'Check the email below, then confirm that you want it sent.':'This is a preview of the test email. Nothing can be sent from this copy of the app.'}</p><p style="margin:0 0 2px"><strong>From:</strong> ${esc(m.from)}</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.to)}</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end">${cloud?'<button type="button" class="btn ghost" id="pvx">Don’t send</button><button type="button" class="btn" id="pvn">Send email</button>':'<button type="button" class="btn" id="pvn">Close</button>'}</div>`);
-  const x=$('#pvx');if(x)x.onclick=()=>$('#pv').close();
-  $('#pvn').onclick=async()=>{if(!cloud)return $('#pv').close();const b=$('#pvn');b.disabled=true;b.textContent='Sending…';
-    try{const{error}=await SB.functions.invoke('send-message',{body:{channel:'Email',to:m.to,from:m.from,subject:m.subject,body:m.body}});
-      if(error){let msg=error.message||'The email could not be sent';try{const r=await error.context.json();if(r&&r.error)msg=r.error}catch(e){}fail(msg)}
-      else{$('#pv').close();toast('Test email sent to '+m.to)}}
-    catch(e){fail((e&&e.message)||'The email could not be sent')}};
-}
-document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('#tem'))testEmail()});
+const MAIL_FROM_ADDR='noreply@repairability.co.uk';
 /* ---- CSV import ---- */
 const impSleep=ms=>new Promise(r=>setTimeout(r,ms));
 function csvParse(t){t=String(t).replace(/^﻿/,'');const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===','){r.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;r.push(c);c='';rows.push(r);r=[]}else c+=ch}if(c!==''||r.length){r.push(c);rows.push(r)}return rows.filter(x=>x.some(v=>String(v).trim()!==''))}
