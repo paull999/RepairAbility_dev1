@@ -49,7 +49,8 @@ h1{font-size:26px;letter-spacing:-.02em;margin:0 auto 0 0;font-weight:800}
 .cfrow th{padding:4px 6px;cursor:default}.cfin{width:100%;min-width:60px;font:inherit;font-size:13px;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--ink)}.clamp3{white-space:normal;max-width:340px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4;max-height:4.2em;overflow-wrap:anywhere}.curw{position:relative;display:block}.curw::before{content:'\00a3';position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--mute);pointer-events:none;font-weight:600}.curw>input{padding-left:36px!important}
 .vtg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}.vtg button{border:0;background:var(--panel);color:var(--ink);padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}.vtg button[aria-pressed=true]{background:var(--acc);color:var(--acc-ink)}
 .rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-top:6px}.rcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:4px;cursor:pointer;align-content:start}.rcard:hover{border-color:var(--brand,#0f6b73)}.rc-t{font-weight:700;font-size:15px;overflow-wrap:anywhere}.rc-r{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}.rc-r span:first-child{color:var(--mute);flex:none}.rc-r span:last-child{text-align:right;overflow-wrap:anywhere}.rc-i img{max-width:100%;max-height:56px;border-radius:6px;object-fit:contain}.rc-a{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.nofilt .flt,.nofilt tr.cfrow{display:none!important}.warnbox{background:color-mix(in srgb,var(--urgent) 12%,var(--panel));color:var(--urgent);border:1px solid var(--urgent);border-radius:8px;padding:10px 14px;font-weight:600;margin:0 0 12px}
+.nofilt .flt,.nofilt tr.cfrow{display:none!important}
+.msel{position:relative;display:inline-block}.msel>button.in{width:auto;min-width:170px;text-align:left;cursor:pointer;background:#fff}.mselp{position:absolute;z-index:30;top:calc(100% + 4px);left:0;min-width:210px;max-height:340px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 6px 18px rgba(0,0,0,.15);padding:6px}.mselp label{display:flex!important;flex-direction:row!important;gap:8px;align-items:center;justify-content:flex-start;text-align:left;padding:5px 8px;border-radius:6px;cursor:pointer;font-size:14px;margin:0;font-weight:400;white-space:nowrap}.mselp label:hover{background:#eef3f2}.mselp input[type=checkbox]{width:16px!important;height:16px;flex:none;margin:0;padding:0}.mselc{border-top:1px solid var(--line);margin-top:4px;padding-top:6px;text-align:right}.mselc .btn{width:auto;display:inline-block}.warnbox{background:color-mix(in srgb,var(--urgent) 12%,var(--panel));color:var(--urgent);border:1px solid var(--urgent);border-radius:8px;padding:10px 14px;font-weight:600;margin:0 0 12px}
 .jsearch{margin-bottom:14px}.jsearch .in{width:100%;font-size:16px;padding:11px 14px}
 .stats{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:20px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
 .stats div{display:flex;flex-direction:column}
@@ -166,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 351</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 352</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -199,7 +200,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const uid=()=>Math.random().toString(36).slice(2,9);
 const day=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
 const today=day(0);
-let D=null,V={view:'jobs',q:'',agent:'',status:'',sort:'number',dir:1};
+let D=null,V={view:'jobs',q:'',agent:'',status:[],stOpen:false,sort:'number',dir:1};
 let ME=null,LAST=Date.now(),AMSG='',UORG='',UPT='';
 let VT={};try{VT=JSON.parse(localStorage.getItem('ra_viewtype')||'{}')||{}}catch(e){VT={}}
 const vtKey=()=>V.view==='setup'?'setup:'+V.stab:V.view,vtGet=()=>'table';
@@ -229,6 +230,8 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   if(b.dataset.xpj){xpExport(XP.jobs,'Jobs');return}
   const t=b._t;if(!t)return;xpExport(t._xp||xpRead(t,[...t.tBodies[0].rows]),xpTitle(t))},true);
 
+document.addEventListener('click',e=>{const t=e.target;if(!t.closest)return;if(t.closest('[data-stbtn]')){V.stOpen=!V.stOpen;render();return}if(t.closest('[data-stclr]')){V.status=[];V.stOpen=true;render();return}if(V.stOpen&&!t.closest('.msel')){V.stOpen=false;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.stOpen){V.stOpen=false;render()}});
 /* ---- CSV import ---- */
 const impSleep=ms=>new Promise(r=>setTimeout(r,ms));
 function csvParse(t){t=String(t).replace(/^﻿/,'');const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===','){r.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;r.push(c);c='';rows.push(r);r=[]}else c+=ch}if(c!==''||r.length){r.push(c);rows.push(r)}return rows.filter(x=>x.some(v=>String(v).trim()!==''))}
@@ -439,7 +442,7 @@ const CFK=['number','title','status','org','jobType','minutes','addr','sorg','da
 const CFV=(j,k)=>k==='number'?String(j.number||''):k==='title'?j.title||'':k==='org'?orgn(j.org)?.name||'':k==='jobType'?D.jobTypes.find(x=>x.id===j.jobType)?.name||'':k==='minutes'?(j.minutes?dur(+j.minutes):''):k==='addr'?jaddr(j):k==='created'?fdt(j.created):k==='agent'?agt(j.agent)?.name||'':k==='sorg'?orgn(j.sorg)?.name||'':k==='date'?(j.date?fmt(j.date)+' '+j.date:''):String(j[k]||'');
 function jobsView(){
   const q=V.q.toLowerCase();V.cf=V.cf||{};const cfa=Object.entries(V.cf).filter(([k,v])=>v);
-  const list=myJobs().filter(j=>cfa.every(([k,v])=>CFV(j,k).toLowerCase().includes(v.toLowerCase()))).filter(j=>(!V.status||j.status===V.status)&&(!V.agent||(V.agent==='none'?!j.agent:j.agent===V.agent))&&(!V.sv||j.sorg===V.sv)&&(!q||(j.number+' '+j.title+' '+jaddr(j)+' '+(j.notes||'')+' '+(orgn(j.org)?.name||'')+' '+(agt(j.agent)?.name||'')+' '+(j.status||'')).toLowerCase().includes(q)));
+  const list=myJobs().filter(j=>cfa.every(([k,v])=>CFV(j,k).toLowerCase().includes(v.toLowerCase()))).filter(j=>(!V.status.length||V.status.includes(j.status))&&(!V.agent||(V.agent==='none'?!j.agent:j.agent===V.agent))&&(!V.sv||j.sorg===V.sv)&&(!q||(j.number+' '+j.title+' '+jaddr(j)+' '+(j.notes||'')+' '+(orgn(j.org)?.name||'')+' '+(agt(j.agent)?.name||'')+' '+(j.status||'')).toLowerCase().includes(q)));
   const open=myJobs().filter(j=>!CLOSED.includes(j.status));
   const JP=pgPage('jobs',[...list].sort((a,b)=>{const x=SK[V.sort](a),y=SK[V.sort](b);return(x>y?1:x<y?-1:0)*V.dir}));
   XP.jobs={head:['Job no.','Job','Status','Organisation','Job type','Time needed','Address','Assigned Servicer','Date','Created','Notes'],rows:JP.all.map(j=>[j.number,j.title,j.status,orgn(j.org)?.name||'',D.jobTypes.find(x=>x.id===j.jobType)?.name||'',j.minutes?dur(+j.minutes):'',jaddr(j)||'',orgn(j.sorg)?.name||'',j.date?fmt(j.date):'',fdt(j.created)||'',j.notes||''])};
@@ -447,7 +450,7 @@ function jobsView(){
   return`<div class="jsearch flt"><input class="in" type="search" id="q" placeholder="Search jobs by number, title, organisation, service agent, address, status or notes" value="${esc(V.q)}" aria-label="Search jobs"></div>
   <header class="top"><h1>Jobs</h1>
   ${isAgentMe()?'':`<select class="in flt" id="fsv" aria-label="Filter by servicer"><option value="">Servicer: All</option>${D.orgs.filter(o=>o.orgType==='Servicer').sort((a,b)=>a.name.localeCompare(b.name)).map(o=>`<option value="${o.id}"${V.sv===o.id?' selected':''}>${esc(o.name)}</option>`).join('')}</select>`}
-  <select class="in flt" id="fs" aria-label="Filter by status"><option value="">All statuses</option>${ST.map(s=>`<option${V.status===s?' selected':''}>${s}</option>`).join('')}</select>
+  <div class="msel flt" id="fs"><button type="button" class="in" data-stbtn="1" aria-haspopup="true" aria-expanded="${V.stOpen?'true':'false'}" aria-label="Filter by status">${V.status.length?(V.status.length<=2?esc(V.status.join(', ')):V.status.length+' statuses selected'):'All statuses'} \u25BE</button>${V.stOpen?`<div class="mselp" role="group" aria-label="Job statuses">${ST.map(s=>`<label><input type="checkbox" data-sts="${esc(s)}"${V.status.includes(s)?' checked':''}> ${esc(s)}</label>`).join('')}<div class="mselc"><button type="button" class="btn ghost" data-stclr="1"${V.status.length?'':' disabled'}>Clear</button></div></div>`:''}</div>
   <button type="button" class="btn ghost" data-xpj="1" title="Export the jobs in this list to a CSV file">Export</button>${ftogBtn()}${isAgentMe()?'':'<button class="btn" data-new="job" title="Creates a new job">New Job</button>'}</header>
   <div class="stats" id="stats">${stats.map(s=>`<div><strong>${s[0]}</strong><span>${s[1]}</span></div>`).join('')}</div>
   ${(isPhone()||vtGet()==='cards')?jobCards(JP):(list.length||cfa.length)?`<div class="wrap"><table class="sheet" style="min-width:1650px"><thead><tr><th style="width:44px;cursor:default">#</th>${[['number','Job no.'],['title','Job'],['status','Status'],['org','Organisation'],['jobType','Job type'],['minutes','Time needed'],['addr','Address'],['sorg','Assigned Servicer'],['date','Date'],['created','Created'],['','Notes']].map(([k,l])=>`<th${k?` data-sort="${k}" aria-sort="${V.sort===k?(V.dir>0?'ascending':'descending'):'none'}"${k==='status'?' style="width:206px"':''}`:' style="cursor:default"'}>${l}${V.sort===k?(V.dir>0?' ▲':' ▼'):''}</th>`).join('')}<th style="width:110px;cursor:default"></th></tr><tr class="cfrow"><th></th>${CFK.map(k=>`<th><input class="cfin" data-cf="${k}" value="${esc(V.cf[k]||'')}" placeholder="Filter" aria-label="Filter ${k}"></th>`).join('')}<th><button class="btn ghost" id="cfclr" style="padding:2px 8px">Clear filters</button></th></tr></thead><tbody>${JP.rows.map((j,i)=>{const late=j.date&&j.date<today&&!CLOSED.includes(j.status);
@@ -1146,7 +1149,7 @@ function openForm(type,id){
 }
 document.addEventListener('click',e=>{
   if(e.target.closest&&e.target.closest('.rzh'))return;
-  {const fb=e.target.closest&&e.target.closest('[data-ftog]');if(fb){const v=V.view;HF2[v]=!HF2[v];if(HF2[v]){if(v==='jobs'){V.q='';V.status='';V.sv='';V.cf={}}else if(v==='orgs'){V.otype='';V.ocf={}}else if(v==='users'){UORG='';V.ucf={}}}try{localStorage.setItem('ra_hidefilters',JSON.stringify(HF2))}catch(x){}render();return}}
+  {const fb=e.target.closest&&e.target.closest('[data-ftog]');if(fb){const v=V.view;HF2[v]=!HF2[v];if(HF2[v]){if(v==='jobs'){V.q='';V.status=[];V.stOpen=false;V.sv='';V.cf={}}else if(v==='orgs'){V.otype='';V.ocf={}}else if(v==='users'){UORG='';V.ucf={}}}try{localStorage.setItem('ra_hidefilters',JSON.stringify(HF2))}catch(x){}render();return}}
   if(e.target.id==='cfclr'){V.cf={};render();return}
   if(e.target.id==='ocfclr'){V.ocf={};render();return}
   if(e.target.id==='ucfclr'){V.ucf={};render();return}
@@ -1199,7 +1202,7 @@ document.addEventListener('change',e=>{
   if(e.target.name==='sorg'&&e.target.form&&e.target.form.id==='frm'&&e.target.form.elements.agent){const ag=e.target.form.elements.agent,v=e.target.value;ag.innerHTML=svcOpts('',0,v).map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');ag.value='';const only=svcOpts('',0,v).filter(o=>o[0]);if(v&&only.length===1)ag.value=only[0][0];ag.disabled=!v;{const bw=e.target.form.elements.bookingWindow;if(bw){bw.innerHTML=bwOpts(v,'').map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');bw.value=''}}ag.title=v?'':'Choose an assigned servicer first'}
   if(e.target.name==='useDefaultWindows'||e.target.name==='bookTo')syncBW();
   if(e.target.id==='fsv'){V.sv=e.target.value;render()}
-  if(e.target.id==='fs'){V.status=e.target.value;render()}
+  if(e.target.dataset&&e.target.dataset.sts!=null){const v=e.target.dataset.sts,i=V.status.indexOf(v);if(i<0)V.status.push(v);else V.status.splice(i,1);V.status=ST.filter(x=>V.status.includes(x));V.stOpen=true;render()}
   if(e.target.id==='fot'){V.otype=e.target.value;render()}
   if(e.target.id==='fuo'){UORG=e.target.value;render()}
   if(e.target.dataset.cs){const j=D.jobs.find(x=>x.id===e.target.dataset.cs);if(j){if(closeBlocked(j,e.target.value)){toast(CLOSE_MSG);render();return}const v=e.target.value,go=()=>{const old={...j};j.status=v;logHist(j,old);save();render();toast('Status updated')};if(v==='New'&&bookData(j)){ask(NEW_MSG,'Continue').then(ok=>{if(!ok){render();return}clearBook(j);go()});return}go()}}
