@@ -244,7 +244,7 @@ declare
   ext text := btrim(coalesce(p->>'extRef','')); ttl text := btrim(coalesce(p->>'title',''));
   cn text := btrim(coalesce(p->>'custName','')); a1 text := btrim(coalesce(p->>'addr1',''));
   lim numeric; basis text := ''; al text; mins numeric; em text := btrim(coalesce(p->>'custEmail',''));
-  ex jsonb; f text;
+  ex jsonb; f text; vt text; evid text;
 begin
   select id, name into kid, kname from public.ra_api_keys
    where active and key_hash = encode(digest(coalesce(p_key,''), 'sha256'), 'hex');
@@ -288,6 +288,15 @@ begin
     end if;
   end if;
 
+  -- The first visit is created with the job (the Site visit event type is created if it does not exist yet).
+  select data->>'id' into vt from public.docs where coll = 'eventTypes' and lower(data->>'name') = 'site visit' limit 1;
+  if vt is null then
+    vt := 'x' || substr(encode(gen_random_bytes(8), 'hex'), 1, 10);
+    insert into public.docs (path, coll, id, data) values ('eventTypes/' || vt, 'eventTypes', vt,
+      jsonb_build_object('id', vt, 'name', 'Site visit', 'description', ''));
+  end if;
+  evid := 'x' || substr(encode(gen_random_bytes(8), 'hex'), 1, 10);
+
   mins := coalesce(nullif(p->>'minutes','')::numeric, nullif(jt->>'minutes','')::numeric);
   num := public.ra_next_job_number();
   jid := 'x' || substr(encode(gen_random_bytes(8), 'hex'), 1, 10);
@@ -300,7 +309,10 @@ begin
     'county', btrim(coalesce(p->>'county','')), 'postcode', pc,
     'notes', coalesce(p->>'notes',''), 'jobPrice', null,
     'created', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
-    'events', '[]'::jsonb);
+    'events', jsonb_build_array(jsonb_build_object(
+      'id', evid, 'type', vt, 'by', 'API: ' || kname,
+      'at', to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+      'note', 'Visit 1 created automatically when the job was created', 'visitNo', 1, 'closed', '')));
   insert into public.docs (path, coll, id, data) values ('jobs/' || jid, 'jobs', jid, j);
   return jsonb_build_object('id', jid, 'number', num, 'duplicate', false);
 end $$;

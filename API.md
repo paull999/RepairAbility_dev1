@@ -24,7 +24,7 @@ Deploy the function with `supabase functions deploy create-job --no-verify-jwt`.
 | `extRef` | no | Your own reference. Sending the same `extRef` again for the same organisation returns the existing job instead of creating another |
 | `custEmail`, `custPhone`, `addr2`, `town`, `county`, `notes`, `minutes` | no | `minutes` defaults from the job type |
 
-The job is created with status **New** and the next job number.
+The job is created with status **New** and the next job number. Its first visit (visit 1, a *Site visit* event, not yet closed) is created with it.
 
 ## Responses
 

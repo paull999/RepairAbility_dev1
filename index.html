@@ -167,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 354</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 355</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -1027,7 +1027,7 @@ function openForm(type,id){
     if(type==='org'){o.name=(o.name||'').trim();const nm=o.name.toLowerCase();if(D.orgs.some(x=>x.id!==id&&(x.name||'').trim().toLowerCase()===nm)){const i=$('#frm').elements.name;showTab('General');i.setCustomValidity('An organisation with this name already exists');i.reportValidity();return}}
     if(type==='user'){o.email=(o.email||'').trim();const em=o.email.toLowerCase();if(em&&D.users.some(u=>u.id!==id&&(u.email||'').trim().toLowerCase()===em)){const i=$('#frm').elements.email;i.setCustomValidity('Another user already has this email address');i.reportValidity();return}}
     if(type==='user'){o.priColours=!!o.priColours;const pw=o.password||'';delete o.password;if(pw&&pwErr(pw)){const i=$('#frm').elements.password;i.setCustomValidity(POL);i.reportValidity();return}if(pw){const r=await sbSetPw(o.email,pw);if(!r.ok){const i=$('#frm').elements.password;i.setCustomValidity(r.msg);i.reportValidity();return}}}
-    if(type==='job'&&'sorg' in o&&o.sorg!==(rec.sorg||'')){const ag=agt('agent' in o?o.agent:rec.agent);if(!o.sorg||!ag||ag.org!==o.sorg)o.agent=''}const prevA=id?rec.agent:'';const snap=(type==='job'&&id)?{...rec}:null;let rid=id;if(id)Object.assign(rec,o);else{rid=uid();D[t.key].push({id:rid,...t.def(),...o,...(type==='job'?{number:jn(await nextJobNo()),created:new Date().toISOString()}:{})})}
+    if(type==='job'&&'sorg' in o&&o.sorg!==(rec.sorg||'')){const ag=agt('agent' in o?o.agent:rec.agent);if(!o.sorg||!ag||ag.org!==o.sorg)o.agent=''}const prevA=id?rec.agent:'';const snap=(type==='job'&&id)?{...rec}:null;let rid=id;if(id)Object.assign(rec,o);else{rid=uid();D[t.key].push({id:rid,...t.def(),...o,...(type==='job'?{number:jn(await nextJobNo()),created:new Date().toISOString(),events:[{id:uid(),type:evType('Site visit').id,by:ME?ME.name:'',at:new Date().toISOString(),note:'Visit 1 created automatically when the job was created',visitNo:1,closed:''}]}:{})})}
     if(type==='job'){if(snap)logHist(rec,snap);else logCreated(D.jobs[D.jobs.length-1])}
     if(type==='user')D.jobs.forEach(j=>{if(j.agent===rid&&!isRA(D.users.find(u=>u.id===rid))){const o0={...j};j.agent='';logHist(j,o0,'Repair Agent no longer a Repair Agent')}});
     save();const kb=BOOKKEEP;BOOKKEEP=0;$('#dlg').close();render();toast(`Saved ${t.label}`);if(kb&&type==='job')openForm('job',id||D.jobs[D.jobs.length-1].id);
