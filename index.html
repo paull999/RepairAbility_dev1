@@ -167,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 356</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 357</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -240,6 +240,29 @@ document.addEventListener('click',e=>{const t=e.target;if(!t.closest)return;cons
   const sc=t.closest('[data-mscl]');if(sc){const[k,w]=sc.dataset.mscl.split(':');V[k]=w==='none'?[]:null;V.msOpen=k;render();return}
   if(V.msOpen&&!t.closest('.msel')){V.msOpen='';render()}});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&V.msOpen){V.msOpen='';render()}});
+
+/* ---- email the servicer when a job is allocated to them; ?job=<id> links open the job ---- */
+const appUrl=()=>location.origin+location.pathname;
+const jobLink=j=>appUrl()+'?job='+encodeURIComponent(j.id);
+function allocMsg(j){const o=orgn(j.sorg),c=orgn(j.org),t=D.jobTypes.find(x=>x.id===j.jobType),bw=j.bookingWindow||'';
+  const when=j.date?fmt(j.date)+(bw?' ('+bw+')':''):'Not yet dated';
+  return{name:o?o.name:'',to:o&&o.email?o.email.trim():'',subject:'Job '+j.number+' allocated to you: '+(j.title||''),
+    body:['Hello '+(o?o.name:'')+',','','Job '+j.number+' has been allocated to you.','','Job: '+(j.title||''),'Customer: '+(c?c.name:''),'Job type: '+(t?t.name:''),'Address: '+jaddr(j),'Date: '+when,'','Open the job: '+jobLink(j),'','Sign in to repairability to see the full details.'].join('\n')}}
+async function emailServicer(j){const m=allocMsg(j);
+  if(window.SB){
+    if(!m.to){toast(m.name+' has no email address saved, so no allocation email was sent');return}
+    try{const{error}=await SB.functions.invoke('send-message',{body:{channel:'Email',to:m.to,subject:m.subject,body:m.body}});
+      if(error){let msg=error.message||'The email could not be sent';try{const x=await error.context.json();if(x&&x.error)msg=x.error}catch(e){}toast('Allocation email to '+m.name+' not sent: '+msg)}
+      else toast('Allocation email sent to '+m.name)}
+    catch(e){toast('Allocation email to '+m.name+' not sent')}
+    return}
+  return new Promise(res=>{
+    $('#pvc').innerHTML=`<h2 style="margin:0 0 4px;font-size:20px">Email to servicer</h2><p style="margin:0 0 12px;color:var(--mute)">This is a preview of the email that is sent to the servicer when a job is allocated to them. Nothing has been sent from this copy of the app.</p><p style="margin:0 0 2px"><strong>To:</strong> ${esc(m.name)} (${esc(m.to||'no email address saved')})</p><p style="margin:0 0 8px"><strong>Subject:</strong> ${esc(m.subject)}</p><pre style="white-space:pre-wrap;font:inherit;background:var(--hi);padding:12px;border-radius:var(--r);margin:8px 0 14px;max-height:260px;overflow:auto">${esc(m.body)}</pre><div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn" id="pvn">Close</button></div>`;
+    $('#pvn').onclick=()=>$('#pv').close();$('#pv').addEventListener('close',()=>res(),{once:true});if(!$('#pv').open)$('#pv').showModal()})}
+let DEEPJOB=new URLSearchParams(location.search).get('job'),DEEPTRY=0;
+function openDeepJob(){if(!DEEPJOB||!ME)return;const j=D.jobs.find(x=>x.id===DEEPJOB);
+  if(j&&myJobs().some(x=>x.id===j.id)){const id=DEEPJOB;DEEPJOB=null;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}V.view='jobs';render();openForm('job',id);return}
+  if(++DEEPTRY<20)setTimeout(openDeepJob,500);else{DEEPJOB=null;toast('That job could not be found, or you do not have access to it')}}
 /* ---- CSV import ---- */
 const impSleep=ms=>new Promise(r=>setTimeout(r,ms));
 function csvParse(t){t=String(t).replace(/^﻿/,'');const rows=[];let r=[],c='',q=false;for(let i=0;i<t.length;i++){const ch=t[i];if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===','){r.push(c);c=''}else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;r.push(c);c='';rows.push(r);r=[]}else c+=ch}if(c!==''||r.length){r.push(c);rows.push(r)}return rows.filter(x=>x.some(v=>String(v).trim()!==''))}
@@ -748,7 +771,7 @@ function gate(){
   {const st=$('#storetxt');if(st)st.textContent=CLOUD?'Data is saved in the shared database.':'Data is saved in this browser.'}
   if(ME)ME=D.users.find(x=>x.id===ME.id&&x.status==='Active')||null;
   const au=$('#auth'),ap=document.querySelector('.app');ap.hidden=!ME;
-  if(ME){au.hidden=true;return}
+  if(ME){au.hidden=true;if(DEEPJOB)setTimeout(openDeepJob,0);return}
   if(au.hidden){au.hidden=false;showLogin()}
 }
 function showLogin(){
@@ -1035,11 +1058,11 @@ function openForm(type,id){
     if(type==='org'){o.name=(o.name||'').trim();const nm=o.name.toLowerCase();if(D.orgs.some(x=>x.id!==id&&(x.name||'').trim().toLowerCase()===nm)){const i=$('#frm').elements.name;showTab('General');i.setCustomValidity('An organisation with this name already exists');i.reportValidity();return}}
     if(type==='user'){o.email=(o.email||'').trim();const em=o.email.toLowerCase();if(em&&D.users.some(u=>u.id!==id&&(u.email||'').trim().toLowerCase()===em)){const i=$('#frm').elements.email;i.setCustomValidity('Another user already has this email address');i.reportValidity();return}}
     if(type==='user'){o.priColours=!!o.priColours;const pw=o.password||'';delete o.password;if(pw&&pwErr(pw)){const i=$('#frm').elements.password;i.setCustomValidity(POL);i.reportValidity();return}if(pw){const r=await sbSetPw(o.email,pw);if(!r.ok){const i=$('#frm').elements.password;i.setCustomValidity(r.msg);i.reportValidity();return}}}
-    if(type==='job'&&'sorg' in o&&o.sorg!==(rec.sorg||'')){const ag=agt('agent' in o?o.agent:rec.agent);if(!o.sorg||!ag||ag.org!==o.sorg)o.agent=''}const prevA=id?rec.agent:'';const snap=(type==='job'&&id)?{...rec}:null;let rid=id;if(id)Object.assign(rec,o);else{rid=uid();D[t.key].push({id:rid,...t.def(),...o,...(type==='job'?{number:jn(await nextJobNo()),created:new Date().toISOString(),events:[{id:uid(),type:evType('Site visit').id,by:ME?ME.name:'',at:new Date().toISOString(),note:'Visit 1 created automatically when the job was created',visitNo:1,closed:''}]}:{})})}
+    if(type==='job'&&'sorg' in o&&o.sorg!==(rec.sorg||'')){const ag=agt('agent' in o?o.agent:rec.agent);if(!o.sorg||!ag||ag.org!==o.sorg)o.agent=''}const prevA=id?rec.agent:'',prevS=id?rec.sorg:'';const snap=(type==='job'&&id)?{...rec}:null;let rid=id;if(id)Object.assign(rec,o);else{rid=uid();D[t.key].push({id:rid,...t.def(),...o,...(type==='job'?{number:jn(await nextJobNo()),created:new Date().toISOString(),events:[{id:uid(),type:evType('Site visit').id,by:ME?ME.name:'',at:new Date().toISOString(),note:'Visit 1 created automatically when the job was created',visitNo:1,closed:''}]}:{})})}
     if(type==='job'){if(snap)logHist(rec,snap);else logCreated(D.jobs[D.jobs.length-1])}
     if(type==='user')D.jobs.forEach(j=>{if(j.agent===rid&&!isRA(D.users.find(u=>u.id===rid))){const o0={...j};j.agent='';logHist(j,o0,'Repair Agent no longer a Repair Agent')}});
     save();const kb=BOOKKEEP;BOOKKEEP=0;$('#dlg').close();render();toast(`Saved ${t.label}`);if(kb&&type==='job')openForm('job',id||D.jobs[D.jobs.length-1].id);
-    if(type==='job'){const j=id?rec:D.jobs[D.jobs.length-1];if(j.agent&&j.agent!==prevA)previewMsgs(j.id)}};
+    if(type==='job'){const j=id?rec:D.jobs[D.jobs.length-1];let ep=null;if(j.sorg&&j.sorg!==prevS&&!document.body.classList.contains('importing'))ep=emailServicer(j);if(j.agent&&j.agent!==prevA){if(ep)ep.then(()=>previewMsgs(j.id));else previewMsgs(j.id)}}};
   $('#cancel').onclick=()=>$('#dlg').close();
   if($('#bookb'))$('#bookb').onclick=()=>{const F0=$('#frm');if(!F0.elements.status)return;if([...F0.querySelectorAll('[required]')].some(x=>!String(x.value||'').trim())){toast('Complete all mandatory fields before booking');return}{const nm=noAgreedMsg((F0.elements.org&&F0.elements.org.value)||rec.org,(F0.elements.jobType&&F0.elements.jobType.value)||rec.jobType,(F0.elements.date&&F0.elements.date.value)||rec.date||'');if(nm){ask(nm,'OK','Close');return}}if(isAgentMe()){F0.elements.status.value='Booked';F0.requestSubmit();return}
     const cur=(F0.elements.sorg&&F0.elements.sorg.value)||rec.sorg||'',curA=(F0.elements.agent&&F0.elements.agent.value)||rec.agent||'',bd=$('#bkd'),bc=$('#bkc');
