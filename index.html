@@ -169,7 +169,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 381</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 382</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -859,6 +859,7 @@ function orgView(){
   V.ocf=V.ocf||{};const oa=Object.entries(V.ocf).filter(([k,v])=>v);
   const olist=D.orgs.filter(o=>(!V.otype||o.orgType===V.otype)&&oa.every(([k,v])=>OCV(o,k).toLowerCase().includes(v.toLowerCase())));
   return`<header class="top"><h1>Organisations</h1><select class="in flt" id="fot" aria-label="Filter by organisation type" style="width:auto"><option value="">All</option><option value="Customer"${V.otype==='Customer'?' selected':''}>Customer</option><option value="Servicer"${V.otype==='Servicer'?' selected':''}>Servicer</option></select>${oa.length?'<button class="btn ghost flt" id="ocfclr">Clear filters</button>':''}${ftogBtn()}<button class="btn" data-new="org">Add organisation</button></header>
+  ${(()=>{const u=D.orgs.filter(o=>o.orgType==='Servicer'&&o.status!=='Inactive'&&!orgInsured(o));return u.length?`<div role="alert" id="insbanner" style="margin:0 0 16px;padding:12px 14px;border:1px solid var(--urgent);border-left:5px solid var(--urgent);border-radius:var(--r);background:color-mix(in srgb,var(--urgent) 10%,var(--panel))"><strong>${u.length===1?'1 servicer does':u.length+' servicers do'} not have a current insurance record:</strong> ${u.map(o=>`<a href="#" data-edit="org" data-id="${o.id}" style="color:inherit;font-weight:600">${esc(o.name)}</a>`).join(', ')}.<div style="font-size:13px;margin-top:4px;color:var(--mute)">Servicers without a current insurance record cannot be booked. Add one on the Insurance tab of the organisation.</div></div>`:''})()}
   ${(D.orgs.length||oa.length||V.otype)?`<div class="wrap"><table style="min-width:900px"><thead><tr><th>Organisation</th><th>Type</th><th>Address</th><th>Main phone</th><th>Main email</th><th>Website</th><th>Finance contact</th><th>Users</th></tr><tr class="cfrow">${OCK.map(k=>`<th><input class="cfin" data-ocf="${k}" value="${esc(V.ocf[k]||'')}" placeholder="Filter" aria-label="Filter ${k}"></th>`).join('')}</tr></thead><tbody>${olist.map(o=>`<tr data-edit="org" data-id="${o.id}"><td style="white-space:nowrap">${o.logo?`<img src="${esc(o.logo)}" alt="" style="height:26px;max-width:70px;object-fit:contain;vertical-align:middle;margin-right:8px;background:#fff;border-radius:3px;padding:2px">`:''}<strong>${esc(o.name)}</strong></td><td>${esc(o.orgType||'—')}</td><td>${esc(oaddr(o))}</td><td>${esc(o.phone)}</td><td>${esc(o.email)}</td><td>${esc(o.website)}</td><td>${esc(o.finName)}</td><td>${D.users.filter(u=>u.org===o.id).length}</td></tr>`).join('')}</tbody></table></div>`:'<p class="empty">No organisations yet. Add one, then assign users to it.</p>'}`;
 }
 const ulist=()=>D.users.filter(u=>(!UORG||(UORG==='none'?!u.org:u.org===UORG)));
