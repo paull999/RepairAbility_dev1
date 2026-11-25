@@ -167,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 367</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 368</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -261,6 +261,12 @@ async function emailServicer(j){const m=allocMsg(j),cloud=!!window.SB;
     let go=false;
     $('#pvn').onclick=()=>{go=cloud;$('#pv').close()};const x=$('#pvx');if(x)x.onclick=()=>$('#pv').close();
     $('#pv').addEventListener('close',async()=>{if(go)await doSend();res()},{once:true});if(!$('#pv').open)$('#pv').showModal()})}
+/* ---- administrators: remove stored files that nothing refers to (once per sign-in) ---- */
+async function sweepBlobs(){if(!(window.SB&&window.SB_MODE)||window.__swept||!ADM())return;window.__swept=1;
+  try{const{data,error}=await SB.functions.invoke('purge-blobs',{body:{sweep:true}});
+    if(error){let m=error.message||'';try{const x=await error.context.json();if(x&&x.error)m=x.error}catch(e){}throw new Error(m||'Request failed')}
+    const n=((data&&data.deleted)||[]).length;if(n)toast('Removed '+n+' unused stored file'+(n>1?'s':''))}
+  catch(e){toast('Stored files could not be cleaned up: '+e.message)}}
 let DEEPJOB=new URLSearchParams(location.search).get('job'),DEEPTRY=0;
 function openDeepJob(){if(!DEEPJOB||!ME)return;const j=D.jobs.find(x=>x.id===DEEPJOB);
   if(j&&myJobs().some(x=>x.id===j.id)){const id=DEEPJOB;DEEPJOB=null;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}V.view='jobs';render();openForm('job',id);return}
@@ -1411,6 +1417,7 @@ async function sbBoot(){
   if(!ME){signOut('Your account is not set up as an active user. Ask an administrator.');return}
   LAST=Date.now();V.view='jobs';$('#boot').hidden=true;render();
   if(RECOV)sbPw('change',ME.id);
+  else{if(DEEPJOB)setTimeout(openDeepJob,0);setTimeout(sweepBlobs,3000)}
 }
 document.addEventListener('click',e=>{const t=e.target;if(!t||!t.id||!$('#frm'))return;const i=$('#frm').elements.password;if(!i)return;
   if(t.id==='pwshow'){const sh=i.type==='password';i.type=sh?'text':'password';t.textContent=sh?'Hide':'Show'}
