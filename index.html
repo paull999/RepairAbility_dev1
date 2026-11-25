@@ -167,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 371</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 372</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -612,6 +612,8 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;cons
     if(cl!=='Complete'&&cl!=='Incomplete'){errDlg('The visit could not be saved','A visit can only be saved with a Close type of Complete or Incomplete.',()=>$('#vq-cl').focus());return}
     if(ar&&lf&&lf<=ar){errDlg('The visit could not be saved','Left site must be later than Arrived on site.',()=>$('#vq-lf').focus());return}
     if(!ex&&!canAddVisit(j)){errDlg('The visit could not be saved',VISIT_ADD_MSG);return}
+    if(!ex){const l=lastVisit(j);if(l&&(+l.visitNo||0)+1!==vn){errDlg('The visit could not be saved','Visits must be created in sequence. The next visit for this job is visit '+((+l.visitNo||0)+1)+'. Close this dialog and add the visit again.');return}
+      if(l&&l.at&&new Date(at)<new Date(l.at)){errDlg('The visit could not be saved','Visit '+vn+' cannot be dated before visit '+l.visitNo+' ('+fdtm(l.at)+').',()=>$('#vq-at').focus());return}}
     if(cl==='Complete'&&(!ex||ex.closed!=='Complete')&&ordP()){$('#vq-w').hidden=false;errDlg('The visit could not be saved','This job still has ordered parts, so the visit cannot be Complete.');return}
     const v=ex||{id:uid(),visitNo:vn,by:ME?ME.name:''},wasC=ex&&ex.closed==='Complete';
     v.at=new Date(at).toISOString();v.note=$('#vq-n').value.trim();v.closed=cl;
