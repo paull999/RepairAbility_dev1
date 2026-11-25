@@ -167,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 369</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 371</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -562,7 +562,7 @@ async function nextJobNo(){if(window.SB){try{const r=await window.SB.rpc('ra_nex
 function logHist(){}
 function logCreated(){}
 const closeOK=j=>!!j&&(j.visits||[]).some(e=>e.closed==='Complete');
-const CLOSE_MSG='A job can only be set to Closed once a visit with a Close type of Closed Complete has been recorded.';
+const CLOSE_MSG='A job can only be set to Closed once a visit with a Close type of Complete has been recorded.';
 const hasOrdered=j=>!!j&&(j.usedParts||[]).some(u=>u.state==='Ordered');
 const PARTS_MSG='A job can only be set to Awaiting Parts when at least one part on the job has a status of Ordered.';
 const partsBlocked=(j,ns)=>ns==='Awaiting Parts'&&(!j||j.status!=='Awaiting Parts')&&!hasOrdered(j);
@@ -582,11 +582,11 @@ function evType(nm){let t=D.eventTypes.find(x=>x.name.toLowerCase()===nm.toLower
 const EVQ={'Email':'Email','Phone Call':'Phone call','Note':'Note'};
 const evLoc=iso=>{const d=new Date(iso);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
 const fdtm=iso=>iso?new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
-const CLOSE_TYPES=[['Complete','Closed Complete'],['Incomplete','Closed Incomplete']];
+const CLOSE_TYPES=[['Complete','Complete'],['Incomplete','Incomplete']];
 const closeLbl=v=>(CLOSE_TYPES.find(c=>c[0]===v)||[,''])[1];
 const lastVisit=j=>(j.visits||[]).reduce((m,v)=>!m||(+v.visitNo||0)>(+m.visitNo||0)?v:m,null);
 const canAddVisit=j=>{const l=lastVisit(j);return !l||l.closed==='Complete'};
-const VISIT_ADD_MSG='A new visit can only be added when the previous visit has a Close type of Closed Complete.';
+const VISIT_ADD_MSG='A new visit can only be added when the previous visit has a Close type of Complete.';
 function newVisit(by,note){return{id:uid(),visitNo:1,at:new Date().toISOString(),by:by||'',note:note||'',closed:''}}
 function openEventQuick(jid,lab,eid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;const ex=eid?(j.events||[]).find(x=>x.id===eid):null;if(eid&&!ex)return;
   if(ex){const t=D.eventTypes.find(x=>x.id===ex.type);lab=t?(Object.keys(EVQ).find(k=>EVQ[k].toLowerCase()===t.name.toLowerCase())||t.name):'Event'}
@@ -601,16 +601,18 @@ function openEventQuick(jid,lab,eid){const j=D.jobs.find(x=>x.id===jid);if(!j)re
 function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;const ex=vid?(j.visits||[]).find(x=>x.id===vid):null;if(vid&&!ex)return;
   if(!ex&&!canAddVisit(j)){toast(VISIT_ADD_MSG);return}
   const vn=ex?ex.visitNo:((lastVisit(j)||{}).visitNo||0)+1,n=new Date(),loc=new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16);
-  $('#evf').innerHTML=`<h2 style="margin:0;grid-column:1/-1">${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</h2><label>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label><label>Visit date time<input class="in" type="datetime-local" id="vq-at" value="${loc}" required></label><label>Arrived on site<input class="in" type="datetime-local" id="vq-ar"></label><label>Left site<input class="in" type="datetime-local" id="vq-lf"></label><label>Close type<select class="in" id="vq-cl"><option value="">Not closed</option>${CLOSE_TYPES.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label><label id="vq-rl" class="full" style="grid-column:1/-1" hidden>Closed incomplete reason<select class="in" id="vq-rs"><option value="">None</option>${D.incReasons.map(r=>`<option value="${r.id}">${esc(r.code)}${r.description?' – '+esc(r.description):''}</option>`).join('')}</select></label><p id="vq-w" style="grid-column:1/-1;margin:0;color:var(--urgent);font-weight:600" hidden>This job still has ordered parts. A visit cannot be Closed Complete until they are used or removed.</p><label class="full" style="grid-column:1/-1">Note<textarea class="in" id="vq-n" rows="4"></textarea></label><div class="acts"><button type="button" class="btn ghost" id="vq-x">Cancel</button><button type="submit" class="btn">Save</button></div>`;
+  $('#evf').innerHTML=`<h2 style="margin:0;grid-column:1/-1">${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</h2><label>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label><label>Visit date time<input class="in" type="datetime-local" id="vq-at" value="${loc}" required></label><label>Arrived on site<input class="in" type="datetime-local" id="vq-ar"></label><label>Left site<input class="in" type="datetime-local" id="vq-lf"></label><label>Close type<select class="in" id="vq-cl">${ex&&!ex.closed?'<option value="">Select a close type</option>':''}${CLOSE_TYPES.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('')}</select></label><label id="vq-rl" class="full" style="grid-column:1/-1" hidden>Incomplete reason<select class="in" id="vq-rs"><option value="">None</option>${D.incReasons.map(r=>`<option value="${r.id}">${esc(r.code)}${r.description?' – '+esc(r.description):''}</option>`).join('')}</select></label><p id="vq-w" style="grid-column:1/-1;margin:0;color:var(--urgent);font-weight:600" hidden>This job still has ordered parts. A visit cannot be Complete until they are used or removed.</p><label class="full" style="grid-column:1/-1">Note<textarea class="in" id="vq-n" rows="4"></textarea></label><div class="acts"><button type="button" class="btn ghost" id="vq-x">Cancel</button><button type="submit" class="btn">Save</button></div>`;
   $('#vq-x').onclick=()=>$('#evd').close();
+  if(!ex)$('#vq-cl').value='Complete';
   const ordP=()=>(j.usedParts||[]).some(u=>u.state==='Ordered');
   if(ex){$('#vq-at').value=evLoc(ex.at);$('#vq-n').value=ex.note||'';if(ex.arrivedAt)$('#vq-ar').value=evLoc(ex.arrivedAt);if(ex.leftAt)$('#vq-lf').value=evLoc(ex.leftAt);$('#vq-cl').value=ex.closed||'';$('#vq-rl').hidden=ex.closed!=='Incomplete';if(ex.reason)$('#vq-rs').value=ex.reason}
   $('#vq-cl').onchange=()=>{$('#vq-rl').hidden=$('#vq-cl').value!=='Incomplete';$('#vq-w').hidden=!($('#vq-cl').value==='Complete'&&ordP())};
   $('#evf').onsubmit=e=>{e.preventDefault();const at=$('#vq-at').value,ar=$('#vq-ar').value,lf=$('#vq-lf').value,cl=$('#vq-cl').value;
-    if(!at||isNaN(new Date(at))){toast('Enter a valid visit date time');return}
-    if(ar&&lf&&lf<=ar){toast('Left site must be later than Arrived on site');$('#vq-lf').focus();return}
-    if(!ex&&!canAddVisit(j)){toast(VISIT_ADD_MSG);return}
-    if(cl==='Complete'&&(!ex||ex.closed!=='Complete')&&ordP()){$('#vq-w').hidden=false;toast('This job still has ordered parts, so the visit cannot be Closed Complete');return}
+    if(!at||isNaN(new Date(at))){errDlg('The visit could not be saved','Enter a valid visit date time.');return}
+    if(cl!=='Complete'&&cl!=='Incomplete'){errDlg('The visit could not be saved','A visit can only be saved with a Close type of Complete or Incomplete.',()=>$('#vq-cl').focus());return}
+    if(ar&&lf&&lf<=ar){errDlg('The visit could not be saved','Left site must be later than Arrived on site.',()=>$('#vq-lf').focus());return}
+    if(!ex&&!canAddVisit(j)){errDlg('The visit could not be saved',VISIT_ADD_MSG);return}
+    if(cl==='Complete'&&(!ex||ex.closed!=='Complete')&&ordP()){$('#vq-w').hidden=false;errDlg('The visit could not be saved','This job still has ordered parts, so the visit cannot be Complete.');return}
     const v=ex||{id:uid(),visitNo:vn,by:ME?ME.name:''},wasC=ex&&ex.closed==='Complete';
     v.at=new Date(at).toISOString();v.note=$('#vq-n').value.trim();v.closed=cl;
     if(ar)v.arrivedAt=new Date(ar).toISOString();else delete v.arrivedAt;if(lf)v.leftAt=new Date(lf).toISOString();else delete v.leftAt;
