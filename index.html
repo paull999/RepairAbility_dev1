@@ -167,7 +167,7 @@ div.wkd{cursor:default}.wkd.off{background:repeating-linear-gradient(135deg,#f3f
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 365</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 367</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -395,14 +395,21 @@ function applyRemote(){
   if(ch)NEEDR=true;return ch}
 async function putBlob(id,data){if(BHAVE.has(id))return;if(db.putBlob){await db.putBlob(id,data);BHAVE.add(id);return}const N=200000,n=Math.ceil(data.length/N);for(let i=0;i<n;i++)await db.doc('blobs/'+id+'~'+i).set({b:id,i,n,d:data.slice(i*N,(i+1)*N)});BHAVE.add(id)}
 function syncFail(e){const c=e&&e.code;if(c==='quota_exceeded')toast('The shared database is full. Remove some photos or documents.');else if(c==='invalid_argument'){RO=true;toast('Your access is view-only, so changes are not being saved.')}else if(c==='revoked'){CLOUD=false;toast('Access to the shared database was removed.')}else{toast('Couldn’t save to the shared database. Retrying…');setTimeout(flush,5000)}}
+const BREF=/blob:[a-z0-9]+/g,PURGE=new Set();
+async function purgeBlobs(ids){if(!(window.SB&&window.SB_MODE)||!ids.length)return;
+  for(let i=0;i<ids.length;i+=100){const part=ids.slice(i,i+100);
+    try{const{data,error}=await SB.functions.invoke('purge-blobs',{body:{ids:part}});
+      if(error){let m=error.message||'';try{const x=await error.context.json();if(x&&x.error)m=x.error}catch(e){}throw new Error(m||'Request failed')}
+      ((data&&data.deleted)||[]).forEach(id=>BHAVE.delete(id))}
+    catch(e){toast('Stored files could not be cleaned up: '+e.message)}}}
 async function flush(){
   if(!CLOUD||RO)return;if(FL){FQ=true;return}FL=true;
   try{do{FQ=false;
     for(const c of COLS){const arr=D[c]||(D[c]=[]),sm=SYNC[c];let mo=0;arr.forEach(x=>{if(x._o>mo)mo=x._o});arr.forEach(x=>{if(x._o==null)x._o=++mo});
-      for(const rec of arr.slice()){const{out,blobs}=pack(rec),cs=canon(out);if(sm.get(rec.id)===cs)continue;for(const b in blobs)await putBlob(b,blobs[b]);await db.doc(c+'/'+rec.id).set(out);sm.set(rec.id,cs)}
-      const ids=new Set(arr.map(x=>x.id));for(const id of [...sm.keys()])if(!ids.has(id)){await db.doc(c+'/'+id).delete();sm.delete(id)}}
+      for(const rec of arr.slice()){const{out,blobs}=pack(rec),cs=canon(out);const was=sm.get(rec.id);if(was===cs)continue;for(const b in blobs)await putBlob(b,blobs[b]);await db.doc(c+'/'+rec.id).set(out);if(was){const now=new Set(cs.match(BREF)||[]);(was.match(BREF)||[]).forEach(r=>{if(!now.has(r))PURGE.add(r.slice(5))})}sm.set(rec.id,cs)}
+      const ids=new Set(arr.map(x=>x.id));for(const id of [...sm.keys()])if(!ids.has(id)){await db.doc(c+'/'+id).delete();(sm.get(id)||'').match(BREF)?.forEach(r=>PURGE.add(r.slice(5)));sm.delete(id)}}
     const m=metaOf(),mc=canon(m);if(mc!==SYNC.meta){await db.doc('meta/app').set(m);SYNC.meta=mc}
-  }while(FQ)}catch(e){syncFail(e)}finally{FL=false}}
+  }while(FQ);if(PURGE.size){const ids=[...PURGE];PURGE.clear();purgeBlobs(ids)}}catch(e){syncFail(e)}finally{FL=false}}
 async function cloudWipe(){for(const c of [...COLS,'blobs']){const s=await db.collection(c).get();for(const d of s.docs)await db.doc(c+'/'+d.id).delete()}await db.doc('meta/app').delete();COLS.forEach(c=>SYNC[c]=new Map());SYNC.meta=null;BHAVE.clear()}
 async function bootCloud(){
   let dbx=window.SBDB||null;
@@ -708,7 +715,7 @@ const odRow=u=>`<div data-odrow style="display:grid;grid-template-columns:1fr 1f
 function initOD(rec){const w=$('#orgdiary');if(!w)return;const ld=$('#frm').elements.leadDays;if(ld&&ld.value==='')ld.value=rec.leadDays??0;const wd=rec.workDays||[1,2,3,4,5];w.querySelectorAll('[data-wd]').forEach(c=>{c.checked=wd.includes(+c.dataset.wd)});
   $('#odrows').innerHTML=(rec.unavail||[]).slice().sort((a,b)=>(a.from||'').localeCompare(b.from||'')).map(odRow).join('');
   $('#odadd').onclick=()=>{$('#odrows').insertAdjacentHTML('beforeend',odRow({}));$('#odrows').lastElementChild.querySelector('input').focus()};
-  $('#odrows').onclick=e=>{const b=e.target.closest('[data-oddel]');if(b)b.closest('[data-odrow]').remove()};
+  $('#odrows').onclick=e=>{const b=e.target.closest('[data-oddel]');if(b){const r=b.closest('[data-odrow]');ask('Remove this unavailable period? It will be removed when you save the organisation.','Remove','Cancel').then(y=>{if(y)r.remove()})}};
   w.oninput=e=>{if(e.target.setCustomValidity)e.target.setCustomValidity('')}}
 function collectOD(){const w=$('#orgdiary');return{days:[...w.querySelectorAll('[data-wd]:checked')].map(c=>+c.dataset.wd),rows:[...w.querySelectorAll('[data-odrow]')].map(r=>({row:r,from:r.querySelector('[data-odf=from]').value,to:r.querySelector('[data-odf=to]').value,note:r.querySelector('[data-odf=note]').value.trim()}))}}
 const isoAdd=(iso,n)=>{const d=new Date(iso+'T12:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
@@ -754,7 +761,7 @@ function initPC(rec){const w=$('#pccover');if(!w)return;const rows=$('#pcrows');
   const up=()=>{dr=null;svg.style.cursor='grab'};svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   $('#pczin').onclick=()=>zoom(.6);$('#pczout').onclick=()=>zoom(1.6);$('#pcz0').onclick=()=>{vb=vb0.slice();set()};
   $('#pcadd').onclick=()=>{rows.insertAdjacentHTML('beforeend',pcRowHtml({}));rows.lastElementChild.querySelector('input').focus()};
-  rows.addEventListener('click',e=>{const b=e.target.closest('[data-pcdel]');if(b){b.closest('[data-pcrow]').remove();pcDraw()}});
+  rows.addEventListener('click',e=>{const b=e.target.closest('[data-pcdel]');if(b){const r=b.closest('[data-pcrow]');ask('Remove this postcode area? It will be removed when you save.','Remove','Cancel').then(y=>{if(y){r.remove();pcDraw()}})}});
   rows.addEventListener('input',e=>{const i=e.target;if(i.dataset.pcf){const v=i.value.toUpperCase();if(v!==i.value)i.value=v;i.setCustomValidity('')}pcDraw()});
   pcDraw()}
 function syncOT(){const f=$('#frm'),sel=f&&f.elements.orgType;if(!sel)return;const ty=sel.value;
@@ -965,14 +972,14 @@ function renderINS(){const box=$('#insurance');if(!box)return;box.innerHTML=(INS
 function initINS(rec){INS=JSON.parse(JSON.stringify(rec.insurance||[]));const box=$('#insurance');if(!box)return;renderINS();
   box.oninput=e=>{const c=INS.find(x=>x.id===e.target.closest('[data-iid]')?.dataset.iid);if(!c)return;if(e.target.dataset.ifrom!==undefined)c.from=e.target.value;if(e.target.dataset.ito!==undefined)c.to=e.target.value};
   box.onchange=e=>{if(e.target.dataset.ifrom!==undefined||e.target.dataset.ito!==undefined){renderINS();return}const fi=e.target.closest('[data-ifile]');if(!fi)return;const c=INS.find(x=>x.id===fi.closest('[data-iid]').dataset.iid),fl=fi.files[0];if(!c||!fl)return;if(!fl.size){toast('That file is empty');fi.value='';return}if(fl.size>10485760){toast('That file is over 10 MB and was not added');fi.value='';return}const r=new FileReader();r.onload=()=>{c.doc={id:uid(),name:fl.name,type:fl.type,size:fl.size,data:r.result};renderINS()};r.readAsDataURL(fl)};
-  box.onclick=e=>{if(e.target.closest('[data-iadd]')){INS.push({id:uid(),from:'',to:'',doc:null});renderINS();return}const row=e.target.closest('[data-iid]'),c=row&&INS.find(x=>x.id===row.dataset.iid);if(!c)return;if(e.target.closest('[data-idel]')){INS=INS.filter(x=>x!==c);renderINS();return}if(e.target.closest('[data-idoc]')){c.doc=null;renderINS();return}if(e.target.closest('[data-idl]')&&c.doc)saveDoc(c.doc)}}
+  box.onclick=e=>{if(e.target.closest('[data-iadd]')){INS.push({id:uid(),from:'',to:'',doc:null});renderINS();return}const row=e.target.closest('[data-iid]'),c=row&&INS.find(x=>x.id===row.dataset.iid);if(!c)return;if(e.target.closest('[data-idel]')){ask('Remove this insurance record? It will be removed when you save.','Remove','Cancel').then(y=>{if(y){INS=INS.filter(x=>x!==c);renderINS()}});return}if(e.target.closest('[data-idoc]')){ask('Remove this file? It will be removed when you save.','Remove','Cancel').then(y=>{if(y){c.doc=null;renderINS()}});return}if(e.target.closest('[data-idl]')&&c.doc)saveDoc(c.doc)}}
 function initUC(rec){UC=JSON.parse(JSON.stringify(rec.certs||[]));const box=$('#ucerts'),f=$('#frm');renderUC();
   if(f._uc)f.removeEventListener('change',f._uc);f._uc=e=>{if(e.target.name==='orgType'||e.target.name==='skills')renderUC()};f.addEventListener('change',f._uc);
   box.oninput=e=>{const c=UC.find(x=>x.id===e.target.closest('[data-cid]')?.dataset.cid);if(!c)return;if(e.target.dataset.cfrom!==undefined)c.from=e.target.value;if(e.target.dataset.cto!==undefined)c.to=e.target.value};
   box.onclick=e=>{const ad=e.target.closest('[data-cadd]');if(ad){UC.push({id:uid(),skill:ad.dataset.cadd,from:'',to:'',doc:null});renderUC();return}
     const row=e.target.closest('[data-cid]'),c=row&&UC.find(x=>x.id===row.dataset.cid);if(!c)return;
-    if(e.target.closest('[data-cdel]')){UC=UC.filter(x=>x!==c);renderUC();return}
-    if(e.target.closest('[data-cdoc]')){c.doc=null;renderUC();return}
+    if(e.target.closest('[data-cdel]')){ask('Remove this certificate? It will be removed when you save.','Remove','Cancel').then(y=>{if(y){UC=UC.filter(x=>x!==c);renderUC()}});return}
+    if(e.target.closest('[data-cdoc]')){ask('Remove this document? It will be removed when you save.','Remove','Cancel').then(y=>{if(y){c.doc=null;renderUC()}});return}
     if(e.target.closest('[data-cdl]')&&c.doc)saveDoc(c.doc)};
   box.onchange=e=>{const fi=e.target.closest('[data-cfile]');if(!fi)return;const c=UC.find(x=>x.id===fi.closest('[data-cid]').dataset.cid),fl=fi.files[0];if(!c||!fl)return;
     if(!DOCEXT.includes((fl.name.split('.').pop()||'').toLowerCase())){toast('That file type isn\u2019t supported (use PDF, image, Word, Excel, CSV or text)');fi.value='';return}
@@ -1167,9 +1174,8 @@ function openForm(type,id){
   if(id&&$('#del'))$('#del').onclick=()=>{
     if(type==='job'&&!ADM()){toast('Only a system administrator can delete a job');return}
     if(type==='user'&&id===ME.id){$('#dlg').close();toast('You can’t delete your own account while signed in');return}
-    if(type==='jobtype'){const n=D.jobs.filter(j=>j.jobType===id).length,b=$('#del');
-      if(n&&!b.dataset.ok){b.dataset.ok='1';b.textContent='Delete anyway';$('#frm .acts').insertAdjacentHTML('beforebegin',`<p style="grid-column:1/-1;margin:0;color:var(--urgent);font-weight:600">This job type is used by ${n} job${n>1?'s':''}. Deleting it will clear the job type on ${n>1?'those jobs':'that job'}. Click Delete anyway to confirm.</p>`);return}
-      if(n){D.jobs.forEach(j=>{if(j.jobType===id){const o0={...j};j.jobType='';logHist(j,o0,'Job type deleted')}});D[t.key]=D[t.key].filter(x=>x.id!==id);save();$('#dlg').close();render();toast('Deleted job type');return}}
+    if(type==='jobtype'){const n=D.jobs.filter(j=>j.jobType===id).length;
+      if(n){ask(`This job type is used by ${n} job${n>1?'s':''}. Deleting it will clear the job type on ${n>1?'those jobs':'that job'}. Delete it anyway?`,'Delete anyway','Cancel').then(ok=>{if(!ok)return;D.jobs.forEach(j=>{if(j.jobType===id){const o0={...j};j.jobType='';logHist(j,o0,'Job type deleted')}});D[t.key]=D[t.key].filter(x=>x.id!==id);save();$('#dlg').close();render();toast('Deleted job type')});return}}
     if(type==='org'){const nj=D.jobs.filter(j=>j.org===id||j.sorg===id).length,np=D.users.filter(u=>u.org===id).length;
       if(nj||np){$('#dlg').close();toast('This organisation is in use'+(nj?` by ${nj} job${nj>1?'s':''}`:'')+(nj&&np?' and':'')+(np?` by ${np} ${np>1?'users':'user'}`:'')+', so it can’t be deleted');return}}
     if(type==='user'){const nj=D.jobs.filter(j=>j.agent===id).length;
@@ -1226,7 +1232,7 @@ document.addEventListener('click',e=>{
   const um=e.target.closest('[data-ucm]');if(um){const g=ugrid(),k=um.dataset.ucm,d=+um.dataset.d,i=g.order.indexOf(k),j=i+d;if(j>=0&&j<g.order.length){[g.order[i],g.order[j]]=[g.order[j],g.order[i]];save();render();openCols();const b=$('#colsc').querySelector('[data-ucm="'+k+'"][data-d="'+d+'"]:not([disabled])')||$('#colsc').querySelector('[data-ucm="'+k+'"]:not([disabled])');if(b)b.focus()}return}
   if(e.target.id==='cpw'){openPw('change',ME.id);return}
   const n=e.target.closest('[data-v]');if(n){V.view=n.dataset.v;render();return}
-  if(e.target.id==='phx'){$('#phv').value='';$('#phw').innerHTML=phHtml('',e.target.dataset.logo);$('#phf').value='';return}
+  if(e.target.id==='phx'){const lg=e.target.dataset.logo;ask('Remove this '+(lg?'logo':'photo')+'? It will be removed when you save.','Remove','Cancel').then(y=>{if(!y)return;$('#phv').value='';$('#phw').innerHTML=phHtml('',lg);$('#phf').value=''});return}
   const tk=e.target.closest('[data-tok]');if(tk){const ta=$('#frm').elements.body;ta.setRangeText('{{'+tk.dataset.tok+'}}',ta.selectionStart,ta.selectionEnd,'end');ta.focus();tplPrev();return}
   const pwb=e.target.closest('[data-pw]');if(pwb){openPw(pwb.dataset.pw,pwb.dataset.id);return}
   const so=e.target.closest('[data-sort]');if(so){const k=so.dataset.sort;V.dir=V.sort===k?-V.dir:1;V.sort=k;render();return}
@@ -1236,7 +1242,7 @@ document.addEventListener('click',e=>{
   if(e.target.id==='agadd'){const r=$('#agrows');r.insertAdjacentHTML('beforeend',agRow({}));const i=r.lastElementChild.querySelector('select');if(i)i.focus();return}
   {const ad=e.target.closest&&e.target.closest('[data-agdel]');if(ad){const row=ad.closest('[data-agrow]');ask('Remove this agreed price? It will be removed when you save the organisation.','Remove','Cancel').then(y=>{if(y)row.remove()});return}}
   if(e.target.id==='bwadd'){const r=$('#bwrows');r.insertAdjacentHTML('beforeend',bwRow({}));const i=r.lastElementChild.querySelector('input');if(i)i.focus();return}
-  {const bd=e.target.closest&&e.target.closest('[data-bwdel]');if(bd){bd.closest('[data-bwrow]').remove();return}}
+  {const bd=e.target.closest&&e.target.closest('[data-bwdel]');if(bd){const row=bd.closest('[data-bwrow]');ask('Remove this booking window? It will be removed when you save the organisation.','Remove','Cancel').then(y=>{if(y)row.remove()});return}}
   {const vb=e.target.closest&&e.target.closest('[data-vt]');if(vb){const k=vtKey();VT[k]=vb.dataset.vt;if(vb.dataset.vt==='cards'&&V.view!=='setup'){V.cf={};V.ocf={};V.ucf={}}try{localStorage.setItem('ra_viewtype',JSON.stringify(VT))}catch(x){}render();return}}
   const ed=e.target.closest('[data-edit]');if(ed)openForm(ed.dataset.edit,ed.dataset.id);
 });
