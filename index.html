@@ -169,7 +169,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 394</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 395</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -601,6 +601,8 @@ const closeOK=j=>!!j;
 const CLOSE_MSG='A new job cannot be created with a status of Closed Complete or Closed Incomplete.';
 const hasOrdered=j=>!!j&&(j.usedParts||[]).some(u=>u.state==='Ordered');
 const PARTS_MSG='A job can only be set to Awaiting Parts when at least one part on the job has a status of Ordered.';
+const NOPART_MSG='No used parts have been logged against this job. Are you sure you want to close the job as Complete?';
+const noPartsCC=(j,ns)=>ns==='Closed Complete'&&j.status!=='Closed Complete'&&!(j.usedParts||[]).length;
 const ORD_MSG='The job cannot be set to Closed Complete while it has parts with a status of Ordered. Receive or remove the ordered parts first.';
 const partsBlocked=(j,ns)=>ns==='Awaiting Parts'&&(!j||j.status!=='Awaiting Parts')&&!hasOrdered(j);
 function closeVisitBlock(j,ns){if(!CL2.includes(ns)||j.status===ns)return'';if(ns==='Closed Complete'&&hasOrdered(j))return ORD_MSG;const cv=latestVisit(j);if(!cv)return'This job has no visit. Add a visit and record its Arrived and Departed times before closing the job.';if(!cv.arrivedAt||!cv.leftAt)return'Record the Arrived and Departed times on the current visit (visit '+cv.visitNo+') before closing the job.';return''}
@@ -665,11 +667,12 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;cons
   <div class="acts" style="grid-column:1/-1"><button type="button" class="btn ghost" id="vq-x">Cancel</button><button type="submit" class="btn">Save</button></div>`;
   $('#vq-x').onclick=()=>$('#evd').close();
   $('#vq-so').onchange=()=>{const w=$('#vq-bw');w.innerHTML=opt(bwOpts($('#vq-so').value,''),'');w.value=''};
-  F.onsubmit=e=>{e.preventDefault();
+  F.onsubmit=async e=>{e.preventDefault();
     const loc=id=>$(id).value,iso=v=>v?new Date(v).toISOString():'';
     const nv={status:loc('#vq-st'),sorg:$('#vq-so').value,date:loc('#vq-dt'),bookingWindow:$('#vq-bw').value,dispatchedAt:loc('#vq-di'),arrivedAt:loc('#vq-ar'),leftAt:loc('#vq-lf')};
     if(AG&&ex){nv.sorg=ex.sorg||'';nv.bookingWindow=ex.bookingWindow||''}
     const er=visitErr(j,ex,nv);if(er.length){errDlg('The visit could not be saved',er);return}
+    if(nv.status==='Closed Complete'&&(!ex||ex.status!=='Closed Complete')&&!(j.usedParts||[]).length&&!await ask(NOPART_MSG,'Close complete','Go back'))return;
     const old=snapJ(j),prev={sorg:j.sorg||'',date:j.date||'',bookingWindow:j.bookingWindow||'',status:j.status};
     const v=ex||{id:uid(),visitNo:vn,by:ME?ME.name:'',created:new Date().toISOString()};
     Object.assign(v,{status:nv.status,sorg:nv.sorg,date:nv.date,bookingWindow:nv.bookingWindow,note:$('#vq-n').value.trim()});
@@ -1332,7 +1335,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest&&e.target.closest('#jpf')&&e.target.tagName!=='BUTTON'){e.preventDefault();addPartLine()}});
 document.addEventListener('change',e=>{
-  if(e.target.dataset.mv){const j=D.jobs.find(x=>x.id===e.target.dataset.mv);if(closeBlocked(j,e.target.value)){errDlg('The job could not be saved',CLOSE_MSG);render();return}{const cm=closeVisitBlock(j,e.target.value);if(cm){errDlg('The job could not be saved',cm);render();return}}const mv=()=>{j.status=e.target.value;save();render();toast('Moved to '+j.status)};if(e.target.value==='New'&&bookData(j)){ask(NEW_MSG,'Continue').then(ok=>{if(!ok){render();return}clearBook(j);mv()});return}mv()}
+  if(e.target.dataset.mv){const j=D.jobs.find(x=>x.id===e.target.dataset.mv);if(closeBlocked(j,e.target.value)){errDlg('The job could not be saved',CLOSE_MSG);render();return}{const cm=closeVisitBlock(j,e.target.value);if(cm){errDlg('The job could not be saved',cm);render();return}}{const el=e.target;if(noPartsCC(j,el.value)&&!el.dataset.cc){ask(NOPART_MSG,'Close complete','Go back').then(ok=>{if(!ok){render();return}el.dataset.cc='1';el.dispatchEvent(new Event('change',{bubbles:true}))});return}}const mv=()=>{j.status=e.target.value;save();render();toast('Moved to '+j.status)};if(e.target.value==='New'&&bookData(j)){ask(NEW_MSG,'Continue').then(ok=>{if(!ok){render();return}clearBook(j);mv()});return}mv()}
   if(e.target.id==='fa'){V.agent=e.target.value;render()}
   if(e.target.name==='sorg'&&e.target.form&&e.target.form.id==='frm'&&e.target.form.elements.agent){const ag=e.target.form.elements.agent,v=e.target.value;ag.innerHTML=svcOpts('',0,v).map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');ag.value='';const only=svcOpts('',0,v).filter(o=>o[0]);if(v&&only.length===1)ag.value=only[0][0];ag.disabled=!v;{const bw=e.target.form.elements.bookingWindow;if(bw){bw.innerHTML=bwOpts(v,'').map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');bw.value=''}}ag.title=v?'':'Choose an assigned servicer first'}
   if(e.target.name==='useDefaultWindows'||e.target.name==='bookTo')syncBW();
@@ -1340,7 +1343,7 @@ document.addEventListener('change',e=>{
   if(e.target.dataset&&e.target.dataset.ms){const k=e.target.dataset.ms,v=e.target.dataset.msv,all=MSF[k].items().map(x=>x[0]);let cur=V[k]===null?all.slice():V[k].slice();const i=cur.indexOf(v);if(i<0)cur.push(v);else cur.splice(i,1);V[k]=all.every(x=>cur.includes(x))?null:cur;V.msOpen=k;render()}
   if(e.target.id==='fot'){V.otype=e.target.value;render()}
   if(e.target.id==='fuo'){UORG=e.target.value;render()}
-  if(e.target.dataset.cs){const j=D.jobs.find(x=>x.id===e.target.dataset.cs);if(j){if(closeBlocked(j,e.target.value)){errDlg('The job could not be saved',CLOSE_MSG);render();return}{const cm=closeVisitBlock(j,e.target.value);if(cm){errDlg('The job could not be saved',cm);render();return}}const v=e.target.value,go=()=>{const old={...j};j.status=v;logHist(j,old);save();render();toast('Status updated')};if(v==='New'&&bookData(j)){ask(NEW_MSG,'Continue').then(ok=>{if(!ok){render();return}clearBook(j);go()});return}go()}}
+  if(e.target.dataset.cs){const j=D.jobs.find(x=>x.id===e.target.dataset.cs);if(j){if(closeBlocked(j,e.target.value)){errDlg('The job could not be saved',CLOSE_MSG);render();return}{const cm=closeVisitBlock(j,e.target.value);if(cm){errDlg('The job could not be saved',cm);render();return}}{const el=e.target;if(noPartsCC(j,el.value)&&!el.dataset.cc){ask(NOPART_MSG,'Close complete','Go back').then(ok=>{if(!ok){render();return}el.dataset.cc='1';el.dispatchEvent(new Event('change',{bubbles:true}))});return}}const v=e.target.value,go=()=>{const old={...j};j.status=v;logHist(j,old);save();render();toast('Status updated')};if(v==='New'&&bookData(j)){ask(NEW_MSG,'Continue').then(ok=>{if(!ok){render();return}clearBook(j);go()});return}go()}}
   if(e.target.id==='jpst'){$('#jpvb').hidden=e.target.value!=='Ordered';return}
   if(e.target.id==='jpm'){const m=e.target.checked;$('#jpsb').hidden=m;$('#jpmb').hidden=!m;return}
   if(e.target.dataset.uf){const j=jobP(),u=j&&(j.usedParts||[])[+e.target.dataset.ui];if(u){const old=snapJ(j);if(e.target.dataset.uf==='qty'){const q=parseFloat(e.target.value);if(!(q>0)){errDlg('The part could not be saved','Quantity must be more than zero');render();return}u.qty=q}else u.note=e.target.value.trim();logHist(j,old);save();toast('Saved')}}
