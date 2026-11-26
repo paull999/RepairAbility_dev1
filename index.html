@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 406</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 407</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -679,7 +679,7 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   const stl=ST.filter(x=>x!=='Invoiced'||b.status==='Invoiced');
   const opt=(l,c)=>l.map(o=>`<option value="${esc(o[0])}"${o[0]===c?' selected':''}>${esc(o[1])}</option>`).join('');
   const dtv=k=>ex&&ex[k]?evLoc(ex[k]):'';
-  const F=$('#evf');F.style.gridTemplateColumns='1fr 1fr';F.style.minWidth='0';$('#evd').style.width='min(680px,94vw)';$('#evd').addEventListener('close',()=>{F.style.gridTemplateColumns='';F.style.minWidth='340px';$('#evd').style.width=''},{once:true});
+  const F=$('#evf');F.style.gridTemplateColumns=MOB()?'minmax(0,1fr)':'1fr 1fr';F.style.minWidth='0';$('#evd').style.width='min(680px,94vw)';$('#evd').addEventListener('close',()=>{F.style.gridTemplateColumns='';F.style.minWidth='340px';$('#evd').style.width=''},{once:true});
   F.innerHTML=`<h2 style="margin:0;grid-column:1/-1">${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</h2>
   <label${MOB()?' hidden':''}>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label>
   <label>Status<select class="in" id="vq-st">${opt(stl.map(x=>[x,x]),b.status)}</select></label>
