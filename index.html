@@ -170,7 +170,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 402</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 403</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -503,15 +503,23 @@ function render(){
   gate();if(!ME){LOGW=null;return}if(LOGW!==ME.id){LOGW=ME.id;setTimeout(insWarn,700)}
   if(!ADM()&&V.view!=='jobs')V.view='jobs';
   const nav=[['jobs','Jobs',myJobs().filter(j=>!CLOSED.includes(j.status)).length],['orgs','Organisations',D.orgs.length],['users','Users',D.users.length],['setup','System Setup','']];
-  $('#nav').innerHTML=nav.filter(n=>ADM()||n[0]==='jobs').map(n=>`<button class="${V.view===n[0]||(n[0]==='setup'&&V.view==='parts')||false?'on':''}" data-v="${n[0]}">${n[1]}<b>${n[2]}</b></button>`).join('');
+  $('#nav').innerHTML=MOB()?'':nav.filter(n=>ADM()||n[0]==='jobs').map(n=>`<button class="${V.view===n[0]||(n[0]==='setup'&&V.view==='parts')||false?'on':''}" data-v="${n[0]}">${n[1]}<b>${n[2]}</b></button>`).join('');
   $('#main').classList.toggle('nofilt',!!HF2[V.view]);
-  $('#main').innerHTML=V.view==='jobs'?jobsView():V.view==='users'?userView():V.view==='orgs'?orgView():V.view==='setup'?setupView():V.view==='parts'?partsView():jobsView();
+  $('#main').innerHTML=MOB()?mobVisits():V.view==='jobs'?jobsView():V.view==='users'?userView():V.view==='orgs'?orgView():V.view==='setup'?setupView():V.view==='parts'?partsView():jobsView();
   $('#who').innerHTML=`Signed in as<br><strong>${esc(ME.name)}</strong> · ${esc(ME.role)}<br><button class="btn ghost" id="cpw" style="margin-top:8px;padding:4px 10px;color:inherit;border-color:rgba(255,255,255,.25)">Change password</button> <button class="btn ghost" id="out" style="margin-top:8px;padding:4px 10px;color:inherit;border-color:rgba(255,255,255,.25)">Sign out</button>`;
   enhanceTables();clampRows();pageLists();applyViewType();
 }
 const isPhone=()=>matchMedia('(max-width:700px)').matches;
 const isMobileUA=()=>/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent||'');
-(()=>{const t=()=>{const e=document.getElementById('mobtag');if(e)e.hidden=!(isMobileUA()||isPhone())};t();addEventListener('resize',t)})();
+const MOB=()=>isMobileUA()||isPhone();
+const MV_HIDE=['Closed Complete','Closed Incomplete','Cancelled'];
+function mobVisits(){
+  if(!ME.org)return'<h2 style="margin:4px 0 12px">My visits</h2><p class="empty">Your user is not linked to an organisation, so there are no visits to show.</p>';
+  const L=[];D.jobs.forEach(j=>(j.visits||[]).forEach(v=>{if(v.sorg===ME.org&&!MV_HIDE.includes(v.status))L.push([j,v])}));
+  L.sort((a,b)=>String(a[1].date||'9999').localeCompare(String(b[1].date||'9999'))||(+a[1].visitNo||0)-(+b[1].visitNo||0));
+  const o=orgn(ME.org);
+  return`<h2 style="margin:4px 0 4px">My visits</h2><p style="margin:0 0 12px;color:var(--mute)">${esc(o?o.name:'')} \u00b7 ${L.length} open visit${L.length===1?'':'s'}</p>`+(L.length?`<div style="display:grid;gap:12px">${L.map(([j,v])=>`<article data-mvisit="${v.id}" data-mjob="${j.id}" style="border:1px solid var(--line);border-left:5px solid var(${COL[v.status]||'--mute'});border-radius:var(--r);background:var(--panel);padding:14px;display:grid;gap:4px;cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong style="font-size:16px">${esc(j.number?'Job '+j.number:'Job')} \u00b7 Visit ${v.visitNo||''}</strong><span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);white-space:nowrap">${esc(v.status||'')}</span></div><div>${esc(j.title||'')}</div><div style="color:var(--mute);font-size:14px">${v.date?esc(fmt(v.date)):'No date set'}${v.bookingWindow?' \u00b7 '+esc(v.bookingWindow):''}</div><div style="font-size:14px">${esc([j.custName,jaddr(j)].filter(Boolean).join(' \u00b7 '))}</div>${j.custPhone?`<div style="font-size:14px">${esc(j.custPhone)}</div>`:''}</article>`).join('')}</div>`:'<p class="empty">No open visits are assigned to your organisation.</p>')}
+(()=>{let was=MOB();const t=()=>{const e=document.getElementById('mobtag');if(e)e.hidden=!MOB();if(MOB()!==was){was=MOB();try{if(ME&&!document.querySelector('dialog[open]'))render()}catch(x){}}};t();addEventListener('resize',t)})();
 function jobCards(JP){
   if(!JP.all.length)return'<p class="empty">No jobs match these filters. Clear the search or add a new job.</p>';
   const sorted=JP.rows;
@@ -1315,6 +1323,7 @@ document.addEventListener('click',e=>{
   const eve=e.target.closest('[data-eved]');if(eve){const j=jobP();if(j)openEventQuick(j.id,'',eve.dataset.eved);return}
   const evr=e.target.closest('[data-evrm]');if(evr){const j=jobP();if(j){ask('Remove this event?','Remove').then(ok=>{if(!ok)return;j.events=(j.events||[]).filter(x=>x.id!==evr.dataset.evrm);save();jrefresh()})}return}
   const vad=e.target.closest('[data-vadd]');if(vad){const j=jobP();if(j){if(NOBOOK.includes(j.status))errDlg('The visit could not be added','A visit cannot be added to a job with a status of '+j.status+'.');else openVisit(j.id)}return}
+  const mvc=e.target.closest('[data-mvisit]');if(mvc){openVisit(mvc.dataset.mjob,mvc.dataset.mvisit);return}
   const ved=e.target.closest('[data-ved]');if(ved){const j=jobP();if(j)openVisit(j.id,ved.dataset.ved);return}
   const vrm=e.target.closest('[data-vrm]');if(vrm){const j=jobP();if(j){const only=(j.visits||[]).length===1;ask(only?'Remove this visit? It is the only visit, so the job’s booking will be cleared and its status set to New.':'Remove this visit? The job will follow the previous visit.','Remove','Cancel').then(ok=>{if(!ok)return;const l=latestVisit(j);if(!l||l.id!==vrm.dataset.vrm)return;const old=snapJ(j);j.visits=j.visits.filter(x=>x.id!==l.id);if(j.visits.length)pullVisit(j);else{clearBook(j);j.status='New';j.bkSig=bkSig(j)}logHist(j,old);save();jrefresh()})}return}
   if(e.target.closest('#fladdb')){$('#fla').click();return}
