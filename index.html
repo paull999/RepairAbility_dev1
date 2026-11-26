@@ -169,7 +169,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 392</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 393</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -649,16 +649,14 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;cons
   const stl=ST.filter(x=>x!=='Invoiced'||b.status==='Invoiced');
   const opt=(l,c)=>l.map(o=>`<option value="${esc(o[0])}"${o[0]===c?' selected':''}>${esc(o[1])}</option>`).join('');
   const dtv=k=>ex&&ex[k]?evLoc(ex[k]):'';
-  const F=$('#evf');F.style.gridTemplateColumns='1fr 1fr';F.style.minWidth='min(640px,92vw)';$('#evd').addEventListener('close',()=>{F.style.gridTemplateColumns='';F.style.minWidth='340px'},{once:true});
+  const F=$('#evf');F.style.gridTemplateColumns='1fr 1fr';F.style.minWidth='0';$('#evd').style.width='min(680px,94vw)';$('#evd').addEventListener('close',()=>{F.style.gridTemplateColumns='';F.style.minWidth='340px';$('#evd').style.width=''},{once:true});
   F.innerHTML=`<h2 style="margin:0;grid-column:1/-1">${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</h2>
   <label>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label>
   <label>Status<select class="in" id="vq-st">${opt(stl.map(x=>[x,x]),b.status)}</select></label>
   <label>Assigned Servicer<select class="in" id="vq-so"${AG?' disabled title="Only administrators can change the assigned servicer"':''}>${opt(sorgOpts(b.sorg),b.sorg||'')}</select></label>
   <label>Scheduled date<input class="in" type="date" id="vq-dt" value="${esc(b.date||'')}"></label>
   <label>Booking window<select class="in" id="vq-bw"${AG?' disabled':''}>${opt(bwOpts(b.sorg,b.bookingWindow),b.bookingWindow||'')}</select></label>
-  <span></span>
   <label>Dispatched<input class="in" type="datetime-local" id="vq-di" value="${dtv('dispatchedAt')}"></label>
-  <span></span>
   <label>Arrived (onsite)<input class="in" type="datetime-local" id="vq-ar" value="${dtv('arrivedAt')}"></label>
   <label>Departed (offsite)<input class="in" type="datetime-local" id="vq-lf" value="${dtv('leftAt')}"></label>
   <label style="grid-column:1/-1">Note<textarea class="in" id="vq-n" rows="3">${esc(ex?ex.note||'':'')}</textarea></label>
@@ -1082,7 +1080,7 @@ function openForm(type,id){
     if(ty==='ucerts')return`<div id="ucerts" style="grid-column:1/-1"></div>`;
     if(ty==='jobno')return rec.id?'':`<label class="full" id="jobno">${l}<input class="in" type="text" value="${esc(jn((D.jobSeq||0)+1))}" readonly tabindex="-1" aria-readonly="true" style="opacity:.85"></label>`;
     if(ty==='jpartstab')return`<div id="jparts" style="grid-column:1/-1">${rec.id?jpartsBody(rec):'<p class="empty">Save the job first, then add parts here.</p>'}</div>`;
-    if(ty==='jvisitstab')return`<div id="jvisits" style="grid-column:1/-1">${rec.id?visitsBody(rec):'<p class="empty">Save the job first, then add visits here.</p>'}</div>`;
+    if(ty==='jvisitstab')return`<h3 style="grid-column:1/-1;margin:10px 0 -4px;font-size:14px;color:var(--mute);border-top:1px solid var(--line,#ccc);padding-top:12px">Visits</h3><div id="jvisits" style="grid-column:1/-1">${rec.id?visitsBody(rec):'<p class="empty">Save the job first, then add visits here.</p>'}</div>`;
     if(ty==='jeventstab')return`<div id="jevents" style="grid-column:1/-1">${rec.id?eventsBody(rec):'<p class="empty">Save the job first, then add events here.</p>'}</div>`;
     if(ty==='jfilestab')return`<div id="jfiles" style="grid-column:1/-1">${rec.id?filesBody(rec):'<p class="empty">Save the job first, then add files here.</p>'}</div>`;
     if(ty==='jphotostab')return`<div id="jphotos" style="grid-column:1/-1">${rec.id?photosBody(rec):'<p class="empty">Save the job first, then add photos here.</p>'}</div>`;
