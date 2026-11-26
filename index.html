@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 410</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 411</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -620,7 +620,7 @@ async function makeFollowUp(j){
     D.jobs.push(n);save();render();toast('Follow up job '+n.number+' created')
   }finally{FUBUSY=false}}
 const TIMES=[['dispatchedAt','Travel start (enroute)'],['arrivedAt','Arrived'],['leftAt','Departed']];
-const timesErr=g=>{const v=TIMES.filter(t=>g(t[0]));for(let q=1;q<v.length;q++)if(g(v[q][0])<=g(v[q-1][0]))return v[q][1]+' must be later than '+v[q-1][1]+'. Travel start (enroute), Arrived and Departed must be in that order.';return''};
+const timesErr=g=>{const v=TIMES.filter(t=>g(t[0]));for(let q=1;q<v.length;q++)if(g(v[q][0])<g(v[q-1][0]))return v[q][1]+' cannot be earlier than '+v[q-1][1]+'. Travel start (enroute), Arrived and Departed must be in that order (they can be the same time).';return''};
 const closeOK=j=>!!j;
 const CLOSE_MSG='A new job cannot be created with a status of Closed Complete or Closed Incomplete.';
 const hasOrdered=j=>!!j&&(j.usedParts||[]).some(u=>u.state==='Ordered');
