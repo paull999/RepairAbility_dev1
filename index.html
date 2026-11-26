@@ -31,6 +31,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 aside{--side:#3d1f6b;--side-ink:#d4c2ee;--brand:#c9a6ff;--brand-ink:#2a1250;background:var(--side);color:var(--side-ink);padding:22px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
 .brand{font-weight:800;font-size:23px;letter-spacing:-.03em;color:#fff;padding:0 10px 18px;display:flex;align-items:center;gap:9px;--mkl:#fff;--mks:var(--side)}
 .brand i{font-style:normal;color:var(--brand)}
+body.mob{overflow-x:hidden}
+body.mob .app{display:block;min-height:0;width:100%;max-width:100vw}
+body.mob aside{position:sticky;top:0;z-index:30;height:auto;width:100%;max-width:100vw;box-sizing:border-box;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:nowrap;padding:8px 12px;overflow:visible;gap:8px}
+body.mob .brand{padding:0;min-width:0;font-size:19px;flex:1 1 auto;overflow:hidden}
+body.mob nav,body.mob aside>.side-foot:not(#who){display:none}
+body.mob #mmenu{display:inline-flex}
+body.mob #who{opacity:1;display:none;position:absolute;top:100%;right:8px;left:auto;width:min(260px,calc(100vw - 16px));box-sizing:border-box;background:var(--side);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:14px;margin:4px 0 0;box-shadow:0 8px 24px rgba(0,0,0,.35);white-space:normal;font-size:14px;line-height:1.5}
+body.mob.menuopen #who{display:block}
+body.mob main{padding:14px 12px;max-width:100vw;box-sizing:border-box}
+#mmenu{display:none;flex:none;align-items:center;justify-content:center;width:42px;height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-size:22px;line-height:1;cursor:pointer;padding:0}
 #mobtag{font-size:11px;font-weight:800;letter-spacing:.04em;color:#d6001c;background:#fff;border-radius:99px;padding:3px 9px;white-space:nowrap}#mobtag[hidden]{display:none}
 .brand .mk{width:30px;height:28px;flex:none}.brand .mk .l{fill:var(--mkl)}.brand .mk .o{fill:var(--brand)}.brand .mk .s{fill:var(--mks)}
 .authbox .brand{--mkl:var(--ink);--mks:var(--panel);--brand:#7b3fc4}
@@ -167,10 +177,11 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
 <div class="app">
 <aside>
   <div class="brand"><svg class="mk" viewBox="0 0 138 130" aria-hidden="true"><path class="l" d="M62 5A57 57 0 0 0 62 119Z"/><path class="o" d="M75 11A57 57 0 0 1 75 125Z"/><rect class="s" x="45" y="59" width="58" height="20" rx="10"/></svg><span>repair<i>ability</i></span><b id="mobtag" hidden>MOBILE VERSION</b></div>
+  <button type="button" id="mmenu" aria-label="Menu" aria-expanded="false">&#9776;</button>
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 404</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 405</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -519,7 +530,7 @@ function mobVisits(){
   L.sort((a,b)=>String(a[1].date||'9999').localeCompare(String(b[1].date||'9999'))||(+a[1].visitNo||0)-(+b[1].visitNo||0));
   const o=orgn(ME.org);
   return`<h2 style="margin:4px 0 4px">My visits</h2><p style="margin:0 0 12px;color:var(--mute)">${esc(o?o.name:'')} \u00b7 ${L.length} open visit${L.length===1?'':'s'}</p>`+(L.length?`<div style="display:grid;gap:12px">${L.map(([j,v])=>`<article data-mvisit="${v.id}" data-mjob="${j.id}" style="border:1px solid var(--line);border-left:5px solid var(${COL[v.status]||'--mute'});border-radius:var(--r);background:var(--panel);padding:14px;display:grid;gap:4px;cursor:pointer"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><strong style="font-size:16px">${esc(j.number?'Job '+j.number:'Job')} \u00b7 Visit ${v.visitNo||''}</strong><span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);white-space:nowrap">${esc(v.status||'')}</span></div><div>${esc(j.title||'')}</div><div style="color:var(--mute);font-size:14px">${v.date?esc(fmt(v.date)):'No date set'}${v.bookingWindow?' \u00b7 '+esc(v.bookingWindow):''}</div><div style="font-size:14px">${esc([j.custName,jaddr(j)].filter(Boolean).join(' \u00b7 '))}</div>${j.custPhone?`<div style="font-size:14px">${esc(j.custPhone)}</div>`:''}</article>`).join('')}</div>`:'<p class="empty">No open visits are assigned to your organisation.</p>')}
-(()=>{let was=MOB();const t=()=>{const e=document.getElementById('mobtag');if(e)e.hidden=!MOB();if(MOB()!==was){was=MOB();try{if(ME&&!document.querySelector('dialog[open]'))render()}catch(x){}}};t();addEventListener('resize',t)})();
+(()=>{let was=MOB();const t=()=>{const e=document.getElementById('mobtag');if(e)e.hidden=!MOB();document.body.classList.toggle('mob',MOB());if(!MOB())document.body.classList.remove('menuopen');if(MOB()!==was){was=MOB();try{if(ME&&!document.querySelector('dialog[open]'))render()}catch(x){}}};t();addEventListener('resize',t)})();
 function jobCards(JP){
   if(!JP.all.length)return'<p class="empty">No jobs match these filters. Clear the search or add a new job.</p>';
   const sorted=JP.rows;
@@ -1323,6 +1334,7 @@ document.addEventListener('click',e=>{
   const eve=e.target.closest('[data-eved]');if(eve){const j=jobP();if(j)openEventQuick(j.id,'',eve.dataset.eved);return}
   const evr=e.target.closest('[data-evrm]');if(evr){const j=jobP();if(j){ask('Remove this event?','Remove').then(ok=>{if(!ok)return;j.events=(j.events||[]).filter(x=>x.id!==evr.dataset.evrm);save();jrefresh()})}return}
   const vad=e.target.closest('[data-vadd]');if(vad){const j=jobP();if(j){if(NOBOOK.includes(j.status))errDlg('The visit could not be added','A visit cannot be added to a job with a status of '+j.status+'.');else openVisit(j.id)}return}
+  {const mm=e.target.closest('#mmenu');if(mm){const o=document.body.classList.toggle('menuopen');mm.setAttribute('aria-expanded',o);return}if(document.body.classList.contains('menuopen')&&!e.target.closest('#who')||e.target.id==='out'||e.target.id==='cpw')document.body.classList.remove('menuopen')}
   const mvc=e.target.closest('[data-mvisit]');if(mvc){openVisit(mvc.dataset.mjob,mvc.dataset.mvisit);return}
   const ved=e.target.closest('[data-ved]');if(ved){const j=jobP();if(j)openVisit(j.id,ved.dataset.ved);return}
   const vrm=e.target.closest('[data-vrm]');if(vrm){const j=jobP();if(j){const only=(j.visits||[]).length===1;ask(only?'Remove this visit? It is the only visit, so the job’s booking will be cleared and its status set to New.':'Remove this visit? The job will follow the previous visit.','Remove','Cancel').then(ok=>{if(!ok)return;const l=latestVisit(j);if(!l||l.id!==vrm.dataset.vrm)return;const old=snapJ(j);j.visits=j.visits.filter(x=>x.id!==l.id);if(j.visits.length)pullVisit(j);else{clearBook(j);j.status='New';j.bkSig=bkSig(j)}logHist(j,old);save();jrefresh()})}return}
