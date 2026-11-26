@@ -169,7 +169,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 393</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 394</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -601,8 +601,9 @@ const closeOK=j=>!!j;
 const CLOSE_MSG='A new job cannot be created with a status of Closed Complete or Closed Incomplete.';
 const hasOrdered=j=>!!j&&(j.usedParts||[]).some(u=>u.state==='Ordered');
 const PARTS_MSG='A job can only be set to Awaiting Parts when at least one part on the job has a status of Ordered.';
+const ORD_MSG='The job cannot be set to Closed Complete while it has parts with a status of Ordered. Receive or remove the ordered parts first.';
 const partsBlocked=(j,ns)=>ns==='Awaiting Parts'&&(!j||j.status!=='Awaiting Parts')&&!hasOrdered(j);
-function closeVisitBlock(j,ns){if(!CL2.includes(ns)||j.status===ns)return'';const cv=latestVisit(j);if(!cv)return'This job has no visit. Add a visit and record its Arrived and Departed times before closing the job.';if(!cv.arrivedAt||!cv.leftAt)return'Record the Arrived and Departed times on the current visit (visit '+cv.visitNo+') before closing the job.';return''}
+function closeVisitBlock(j,ns){if(!CL2.includes(ns)||j.status===ns)return'';if(ns==='Closed Complete'&&hasOrdered(j))return ORD_MSG;const cv=latestVisit(j);if(!cv)return'This job has no visit. Add a visit and record its Arrived and Departed times before closing the job.';if(!cv.arrivedAt||!cv.leftAt)return'Record the Arrived and Departed times on the current visit (visit '+cv.visitNo+') before closing the job.';return''}
 const closeBlocked=(j,ns)=>CL2.includes(ns)&&(!j||j.status!==ns)&&!closeOK(j);
 const bookData=j=>!!(j&&(j.date||j.sorg||j.bookingWindow));
 const NEW_MSG='This job has a booking date, servicer organisation or booking window recorded. Setting the status to New will remove them from the job. Do you want to continue?';
@@ -633,6 +634,7 @@ function visitErr(j,ex,nv){
   const er=[],closed=['Closed Complete','Closed Incomplete','Invoiced'].includes(nv.status);
   if(nv.status==='New'&&(nv.sorg||nv.date||nv.bookingWindow))er.push('A visit with a status of New cannot have an assigned servicer, scheduled date or booking window. Set the status to Booked, or clear them.');
   if(nv.status==='Booked'&&!nv.sorg)er.push('Choose an assigned servicer for a Booked visit.');
+  if(nv.status==='Closed Complete'&&(!ex||ex.status!=='Closed Complete')&&hasOrdered(j))er.push(ORD_MSG.replace('The job cannot','The visit cannot'));
   const te=timesErr(k=>nv[k]||'');if(te)er.push(te);
   if(nv.leftAt&&!nv.arrivedAt)er.push('Departed can only be recorded when Arrived has been recorded.');
   if(closed&&!nv.arrivedAt)er.push('Record the Arrived time. A visit with a status of '+nv.status+' must have its onsite time recorded.');
