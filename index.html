@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 405</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 406</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -681,9 +681,9 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   const dtv=k=>ex&&ex[k]?evLoc(ex[k]):'';
   const F=$('#evf');F.style.gridTemplateColumns='1fr 1fr';F.style.minWidth='0';$('#evd').style.width='min(680px,94vw)';$('#evd').addEventListener('close',()=>{F.style.gridTemplateColumns='';F.style.minWidth='340px';$('#evd').style.width=''},{once:true});
   F.innerHTML=`<h2 style="margin:0;grid-column:1/-1">${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</h2>
-  <label>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label>
+  <label${MOB()?' hidden':''}>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label>
   <label>Status<select class="in" id="vq-st">${opt(stl.map(x=>[x,x]),b.status)}</select></label>
-  <label>Assigned Servicer<select class="in" id="vq-so" disabled title="Change the booking by rebooking the job">${opt(sorgOpts(b.sorg),b.sorg||'')}</select></label>
+  <label${MOB()?' hidden':''}>Assigned Servicer<select class="in" id="vq-so" disabled title="Change the booking by rebooking the job">${opt(sorgOpts(b.sorg),b.sorg||'')}</select></label>
   <label>Scheduled date<input class="in" type="date" id="vq-dt" value="${esc(b.date||'')}" disabled></label>
   <label>Booking window<select class="in" id="vq-bw" disabled>${opt(bwOpts(b.sorg,b.bookingWindow),b.bookingWindow||'')}</select></label>
   <label>Enroute at<input class="in" type="datetime-local" id="vq-di" value="${dtv('dispatchedAt')}"></label>
