@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 409</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 410</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -619,8 +619,8 @@ async function makeFollowUp(j){
     FU_COPY.forEach(k=>{if(j[k]!=null)n[k]=j[k]});
     D.jobs.push(n);save();render();toast('Follow up job '+n.number+' created')
   }finally{FUBUSY=false}}
-const TIMES=[['dispatchedAt','Left at (enroute)'],['arrivedAt','Arrived'],['leftAt','Departed']];
-const timesErr=g=>{const v=TIMES.filter(t=>g(t[0]));for(let q=1;q<v.length;q++)if(g(v[q][0])<=g(v[q-1][0]))return v[q][1]+' must be later than '+v[q-1][1]+'. Left at (enroute), Arrived and Departed must be in that order.';return''};
+const TIMES=[['dispatchedAt','Travel start (enroute)'],['arrivedAt','Arrived'],['leftAt','Departed']];
+const timesErr=g=>{const v=TIMES.filter(t=>g(t[0]));for(let q=1;q<v.length;q++)if(g(v[q][0])<=g(v[q-1][0]))return v[q][1]+' must be later than '+v[q-1][1]+'. Travel start (enroute), Arrived and Departed must be in that order.';return''};
 const closeOK=j=>!!j;
 const CLOSE_MSG='A new job cannot be created with a status of Closed Complete or Closed Incomplete.';
 const hasOrdered=j=>!!j&&(j.usedParts||[]).some(u=>u.state==='Ordered');
@@ -689,7 +689,7 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   <label${MOB()?' hidden':''}>Assigned Servicer<select class="in" id="vq-so" disabled title="Change the booking by rebooking the job">${opt(sorgOpts(b.sorg),b.sorg||'')}</select></label>
   <label>Scheduled date<input class="in" type="date" id="vq-dt" value="${esc(b.date||'')}" disabled></label>
   <label>Booking window<select class="in" id="vq-bw" disabled>${opt(bwOpts(b.sorg,b.bookingWindow),b.bookingWindow||'')}</select></label>
-  <label>Left at (enroute)<input class="in" type="datetime-local" id="vq-di" value="${dtv('dispatchedAt')}"></label>
+  <label>Travel start (enroute)<input class="in" type="datetime-local" id="vq-di" value="${dtv('dispatchedAt')}"></label>
   <label>Arrived (onsite)<input class="in" type="datetime-local" id="vq-ar" value="${dtv('arrivedAt')}"></label>
   <label>Departed (offsite)<input class="in" type="datetime-local" id="vq-lf" value="${dtv('leftAt')}"></label>
   ${MB?`<h3 style="grid-column:1/-1;margin:6px 0 -4px;font-size:14px;color:var(--mute);border-top:1px solid var(--line);padding-top:12px">Customer</h3>${ro('Customer name',j.custName)}${ro('Email',j.custEmail)}${ro('Phone',j.custPhone)}${ro('Address line 1',j.addr1)}${ro('Address line 2',j.addr2)}${ro('Town / city',j.town)}${ro('County',j.county)}${ro('Postcode',j.postcode)}`:''}
@@ -726,7 +726,7 @@ function visitsBody(j){
   const row=(l,v)=>v?`<div style="display:flex;gap:8px;font-size:13px"><span style="color:var(--mute);min-width:92px">${l}</span><span style="font-weight:600;min-width:0;overflow-wrap:anywhere">${v}</span></div>`:'';
   return vs.length?`<div id="vlist" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${vs.map(x=>{const cur=last&&x.id===last.id,so=orgn(x.sorg);return`<div class="vcard" data-vid="${x.id}" style="border:1px solid ${cur?'var(--brand)':'var(--line)'};border-radius:var(--r);background:var(--panel);padding:14px;display:grid;gap:6px;align-content:start">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong style="font-size:16px">Visit ${x.visitNo||''}${cur?' <span style="font-size:12px;font-weight:600;color:var(--brand)">· current</span>':''}</strong><span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);white-space:nowrap">${esc(x.status||'')}</span></div>
-    ${row('Servicer',esc(so?so.name:''))}${row('Scheduled',x.date?esc(fmt(x.date)):'')}${row('Window',esc(x.bookingWindow||''))}${row('Left at (enroute)',fdtm(x.dispatchedAt))}${row('Arrived',fdtm(x.arrivedAt))}${row('Departed',fdtm(x.leftAt))}${row('Note',esc(x.note||''))}
+    ${row('Servicer',esc(so?so.name:''))}${row('Scheduled',x.date?esc(fmt(x.date)):'')}${row('Window',esc(x.bookingWindow||''))}${row('Travel start (enroute)',fdtm(x.dispatchedAt))}${row('Arrived',fdtm(x.arrivedAt))}${row('Departed',fdtm(x.leftAt))}${row('Note',esc(x.note||''))}
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px"><span style="font-size:12px;color:var(--mute)">${esc(x.by||'')}${x.created?' · '+fdtm(x.created):''}</span><span style="white-space:nowrap"><button type="button" class="btn ghost" data-ved="${x.id}">Edit</button>${!AG&&cur?` <button type="button" class="btn ghost" data-vrm="${x.id}">Remove</button>`:''}</span></div></div>`}).join('')}</div>`:'<p class="empty">No visits yet. Booking the job adds the first visit.</p>'}
 function eventsBody(j){
   const es=[...(j.events||[])].sort((a,b)=>(a.at||'')<(b.at||'')?1:-1);
