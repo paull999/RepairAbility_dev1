@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 413</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 414</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -683,8 +683,8 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   const F=$('#evf');F.style.gridTemplateColumns=MOB()?'minmax(0,1fr)':'1fr 1fr';F.style.minWidth='0';$('#evd').style.width='min(680px,94vw)';$('#evd').addEventListener('close',()=>{F.style.gridTemplateColumns='';F.style.minWidth='340px';$('#evd').style.width=''},{once:true});
   const MB=MOB(),sbadge=st=>`<span id="vq-badge" style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:99px;border:2px solid var(${COL[st]||'--mute'});color:var(${COL[st]||'--mute'});white-space:nowrap">${esc(st||'')}</span>`;
   const ro=(l,v,full)=>`<label${full?' style="grid-column:1/-1"':''}>${l}<input class="in" value="${esc(v||'')}" readonly tabindex="-1" style="opacity:.85"></label>`;
-  F.innerHTML=`<h2 style="margin:0;grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</span>${MB?sbadge(b.status):''}${MB?'<button type="button" id="vq-mn" class="btn ghost" aria-expanded="false" style="margin-left:auto;padding:4px 12px">&#9776; Menu</button>':''}</h2>
-  ${MB?`<div id="vq-menu" hidden style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px">${['Comms','Parts','Photos','Notes'].map(t=>`<button type="button" class="btn ghost" data-vtab="${t}">${t}</button>`).join('')}${NOBOOK.includes(j.status)?'':'<button type="button" class="btn" id="vq-rb" style="grid-column:1/-1">Rebook visit</button>'}</div>`:''}
+  F.innerHTML=`<h2 style="margin:0;grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span>${ex?'Edit':'Add'} visit ${vn} · ${esc(j.number||'')}</span>${MB?sbadge(b.status):''}</h2>
+  ${MB?`<div id="vq-menu" style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px">${['Comms','Parts','Photos','Notes'].map(t=>`<button type="button" class="btn ghost" data-vtab="${t}">${t}</button>`).join('')}${NOBOOK.includes(j.status)?'':'<button type="button" class="btn" id="vq-rb" style="grid-column:1/-1">Rebook visit</button>'}</div>`:''}
   <label${MOB()?' hidden':''}>Visit number<input class="in" id="vq-vn" value="${vn}" disabled></label>
   <label>Status<select class="in" id="vq-st">${opt(stl.map(x=>[x,x]),b.status)}</select></label>
   <label${MOB()?' hidden':''}>Assigned Servicer<select class="in" id="vq-so" disabled title="Change the booking by rebooking the job">${opt(sorgOpts(b.sorg),b.sorg||'')}</select></label>
@@ -699,7 +699,6 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   $('#vq-x').onclick=()=>$('#evd').close();
   if(MB){$('#vq-st').addEventListener('change',()=>{const o=$('#vq-badge');if(o)o.outerHTML=sbadge($('#vq-st').value)});
     {const rb=$('#vq-rb');if(rb)rb.onclick=()=>{$('#evd').close();openForm('job',jid);const bb=$('#bookb');if(bb&&!bb.hidden&&!bb.disabled)bb.click()}}
-    $('#vq-mn').onclick=()=>{const m=$('#vq-menu');m.hidden=!m.hidden;$('#vq-mn').setAttribute('aria-expanded',String(!m.hidden))};
     F.querySelectorAll('[data-vtab]').forEach(bt=>bt.onclick=()=>{const t=bt.dataset.vtab;$('#evd').close();openForm('job',jid);if($('#frm').querySelector('[data-tab-btn="'+t+'"]'))showTab(t)})}
   $('#vq-so').onchange=()=>{const w=$('#vq-bw');w.innerHTML=opt(bwOpts($('#vq-so').value,''),'');w.value=''};
   F.onsubmit=async e=>{e.preventDefault();
