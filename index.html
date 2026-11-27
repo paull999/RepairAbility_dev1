@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 419</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 420</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -541,7 +541,7 @@ function jobCards(JP){
 function ukPostcode(v){const c=String(v||'').toUpperCase().replace(/\s+/g,'');if(c==='GIR0AA')return'GIR 0AA';if(!/^([A-PR-UWYZ]([0-9]{1,2}|[A-HK-Y][0-9]([0-9ABEHMNPRV-Y])?|[0-9][A-HJKPS-UW])[0-9][ABD-HJLNP-UW-Z]{2})$/.test(c))return'';return c.slice(0,-3)+' '+c.slice(-3)}
 const isRA=u=>{const o=u&&D.orgs.find(x=>x.id===u.org);return !!o&&o.orgType==='Servicer'};
 const isAgentMe=()=>isRA(ME);
-let AGBK=0;
+let AGBK=0,SUBBACK=null;
 const AGLOCK=['bookingWindow','title','jobType','addr1','addr2','town','county','postcode','sorg','agent','jobPrice','custName','custEmail','custPhone'];
 const agLocked=(type,k)=>type==='job'&&isAgentMe()&&AGLOCK.includes(k);
 const orgOnlyMe=()=>!!ME&&ME.role!=='SYSADMIN'&&!isRA(ME);
@@ -702,7 +702,7 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   if(MB){$('#vq-st').addEventListener('change',()=>{const o=$('#vq-badge');if(o)o.outerHTML=sbadge($('#vq-st').value)});
     {const rb=$('#vq-rb');if(rb)rb.onclick=()=>{$('#evd').close();openForm('job',jid);const bb=$('#bookb');if(bb&&!bb.hidden&&!bb.disabled)bb.click()}}
     const vid=ex?ex.id:'';
-    F.querySelectorAll('[data-vtab]').forEach(bt=>bt.onclick=()=>{const t=bt.dataset.vtab;$('#evd').close();openForm('job',jid);const fm=$('#frm');if(fm.querySelector('[data-tab-btn="'+t+'"]')){showTab(t);const tb=fm.querySelector('[data-tab-btn]'),bar=tb&&(tb.closest('[role=tablist]')||tb.parentElement);if(bar)bar.hidden=true;fm._h=null;const pd=$('#tabpad');if(pd)pd.style.display='none';fm.style.minHeight='';[...fm.children].forEach(c=>{if(c.tagName==='H2'||c.querySelector('#cancel')||c.id==='cancel'||c.dataset.tab===t||c.querySelector('[data-tab="'+t+'"]'))return;c.hidden=true});['#bookb','#invb','#jsbtn'].forEach(q=>{const x=fm.querySelector(q);if(x)x.hidden=true});const cn=fm.querySelector('#cancel');if(cn)cn.onclick=()=>{$('#dlg').close();openVisit(jid,vid)};fm.insertAdjacentHTML('afterbegin','<button type="button" class="btn ghost" id="backv" style="justify-self:start;margin-bottom:6px">&larr; Back to visit</button>');$('#backv').onclick=()=>{$('#dlg').close();openVisit(jid,vid)}}})}
+    F.querySelectorAll('[data-vtab]').forEach(bt=>bt.onclick=()=>{const t=bt.dataset.vtab;$('#evd').close();openForm('job',jid);const fm=$('#frm');if(fm.querySelector('[data-tab-btn="'+t+'"]')){showTab(t);const tb=fm.querySelector('[data-tab-btn]'),bar=tb&&(tb.closest('[role=tablist]')||tb.parentElement);if(bar)bar.hidden=true;fm._h=null;const pd=$('#tabpad');if(pd)pd.style.display='none';fm.style.minHeight='';[...fm.children].forEach(c=>{if(c.tagName==='H2'||c.querySelector('#cancel')||c.id==='cancel'||c.dataset.tab===t||c.querySelector('[data-tab="'+t+'"]'))return;c.hidden=true});['#bookb','#invb','#jsbtn'].forEach(q=>{const x=fm.querySelector(q);if(x)x.hidden=true});const cn=fm.querySelector('#cancel');if(cn)cn.onclick=()=>{SUBBACK=null;$('#dlg').close();openVisit(jid,vid)};fm.insertAdjacentHTML('afterbegin','<button type="button" class="btn ghost" id="backv" style="justify-self:start;margin-bottom:6px">&larr; Back to visit</button>');SUBBACK={jid,vid};$('#backv').onclick=()=>{SUBBACK=null;$('#dlg').close();openVisit(jid,vid)}}})}
   $('#vq-so').onchange=()=>{const w=$('#vq-bw');w.innerHTML=opt(bwOpts($('#vq-so').value,''),'');w.value=''};
   F.onsubmit=async e=>{e.preventDefault();
     const loc=id=>$(id).value,iso=v=>v?new Date(v).toISOString():'';
@@ -1111,7 +1111,7 @@ function initUC(rec){UC=JSON.parse(JSON.stringify(rec.certs||[]));const box=$('#
     if(fl.size>2097152){errDlg('The file could not be added','That file is over 2 MB and was not added');fi.value='';return}
     const r=new FileReader();r.onload=()=>{c.doc={id:uid(),name:fl.name,type:fl.type,size:fl.size,data:r.result};renderUC()};r.readAsDataURL(fl)}}
 let BOOKKEEP=0;
-function openForm(type,id){
+function openForm(type,id){SUBBACK=null;
   BOOKKEEP=0;
   const t=F[type],rec=id?D[t.key].find(x=>x.id===id):t.def();
   if(type==='job'&&!id&&!D.orgs.some(o=>o.orgType==='Customer')){errDlg('The job could not be created','Add a customer organisation first');return}
@@ -1209,7 +1209,7 @@ function openForm(type,id){
     if(type==='job'&&'sorg' in o&&o.sorg!==(rec.sorg||'')){const ag=agt('agent' in o?o.agent:rec.agent);if(!o.sorg||!ag||ag.org!==o.sorg)o.agent=''}const prevA=id?rec.agent:'',prevS=id?rec.sorg:'';const snap=(type==='job'&&id)?{...rec}:null;let rid=id;if(id)Object.assign(rec,o);else{rid=uid();D[t.key].push({id:rid,...t.def(),...o,...(type==='job'?{number:jn(await nextJobNo()),created:new Date().toISOString(),events:[]}:{})})}
     if(type==='job'){if(snap)logHist(rec,snap);else logCreated(D.jobs[D.jobs.length-1])}
     if(type==='user')D.jobs.forEach(j=>{if(j.agent===rid&&!isRA(D.users.find(u=>u.id===rid))){const o0={...j};j.agent='';logHist(j,o0,'Repair Agent no longer a Repair Agent')}});
-    save();const kb=BOOKKEEP;BOOKKEEP=0;$('#dlg').close();render();toast(`Saved ${t.label}`);if(kb&&type==='job')openForm('job',id||D.jobs[D.jobs.length-1].id);
+    save();const kb=BOOKKEEP;BOOKKEEP=0;$('#dlg').close();render();toast(`Saved ${t.label}`);if(SUBBACK){const sb=SUBBACK;SUBBACK=null;openVisit(sb.jid,sb.vid)}if(kb&&type==='job')openForm('job',id||D.jobs[D.jobs.length-1].id);
     if(type==='job'){const j=id?rec:D.jobs[D.jobs.length-1];let ep=null;{const rbk=!!snap&&j.status==='Booked'&&(snap.status!=='Booked'||(snap.date||'')!==(j.date||'')||(snap.bookingWindow||'')!==(j.bookingWindow||''));if(j.sorg&&(j.sorg!==prevS||rbk)&&!document.body.classList.contains('importing'))ep=emailServicer(j,!!snap&&(!!prevS||rbk))}if(j.agent&&j.agent!==prevA){if(ep)ep.then(()=>previewMsgs(j.id));else previewMsgs(j.id)}if(j.status==='Closed Incomplete'&&(!snap||snap.status!=='Closed Incomplete'))makeFollowUp(j)}};
   $('#cancel').onclick=()=>$('#dlg').close();
   if($('#bookb'))$('#bookb').onclick=()=>{const F0=$('#frm');if(!F0.elements.status)return;if([...F0.querySelectorAll('[required]')].some(x=>!String(x.value||'').trim())){errDlg('The job could not be booked','Complete all mandatory fields before booking.');return}{const nm=noAgreedMsg((F0.elements.org&&F0.elements.org.value)||rec.org,(F0.elements.jobType&&F0.elements.jobType.value)||rec.jobType,(F0.elements.date&&F0.elements.date.value)||rec.date||'');if(nm){errDlg('The job could not be booked',nm);return}}
