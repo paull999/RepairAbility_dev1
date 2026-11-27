@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 415</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 416</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -543,7 +543,7 @@ let AGBK=0;
 const AGLOCK=['bookingWindow','title','jobType','addr1','addr2','town','county','postcode','sorg','agent','jobPrice','custName','custEmail','custPhone'];
 const agLocked=(type,k)=>type==='job'&&isAgentMe()&&AGLOCK.includes(k);
 const orgOnlyMe=()=>!!ME&&ME.role!=='SYSADMIN'&&!isRA(ME);
-const myJobs=()=>isAgentMe()?D.jobs.filter(j=>j.agent===ME.id):orgOnlyMe()?D.jobs.filter(j=>ME.org&&j.org===ME.org):D.jobs;
+const myJobs=()=>isAgentMe()?D.jobs.filter(j=>j.agent===ME.id||(!!ME.org&&(j.sorg===ME.org||(j.visits||[]).some(v=>v.sorg===ME.org)))):orgOnlyMe()?D.jobs.filter(j=>ME.org&&j.org===ME.org):D.jobs;
 const CFK=['number','title','status','org','jobType','addr','sorg','date','created','notes'];
 const CFV=(j,k)=>k==='number'?String(j.number||''):k==='title'?j.title||'':k==='org'?orgn(j.org)?.name||'':k==='jobType'?D.jobTypes.find(x=>x.id===j.jobType)?.name||'':k==='addr'?jaddr(j):k==='created'?fdt(j.created):k==='agent'?agt(j.agent)?.name||'':k==='sorg'?orgn(j.sorg)?.name||'':k==='date'?(j.date?fmt(j.date)+' '+j.date:''):String(j[k]||'');
 function jobsView(){
