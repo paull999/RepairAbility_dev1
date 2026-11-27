@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 424</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 425</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -525,7 +525,7 @@ function render(){
 const isPhone=()=>matchMedia('(max-width:700px)').matches;
 const isMobileUA=()=>/Android|iPhone|iPad|iPod|Mobi/i.test(navigator.userAgent||'');
 const MOB=()=>{try{return isMobileUA()||isPhone()||!!(navigator.userAgentData&&navigator.userAgentData.mobile)||(matchMedia('(pointer:coarse)').matches&&matchMedia('(hover:none)').matches)||(/Macintosh/.test(navigator.userAgent||'')&&navigator.maxTouchPoints>1)}catch(e){return isPhone()}};
-const MV_HIDE=['Closed Complete','Closed Incomplete','Cancelled'];
+const MV_HIDE=['Closed Complete','Closed Incomplete','Cancelled','Invoiced'];
 function mobVisits(){
   if(!ME.org)return'<h2 style="margin:4px 0 12px">My visits</h2><p class="empty">Your user is not linked to an organisation, so there are no visits to show.</p>';
   const L=[];D.jobs.forEach(j=>(j.visits||[]).forEach(v=>{if(v.sorg===ME.org&&!MV_HIDE.includes(v.status))L.push([j,v])}));
