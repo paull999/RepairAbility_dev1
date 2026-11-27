@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 414</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 415</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -1283,6 +1283,7 @@ function openForm(type,id){
       if(fa){const ka=keepA&&(agt(keepA)||{}).org===o?keepA:'';if(ka&&!fa.querySelector('option[value="'+ka+'"]'))fa.insertAdjacentHTML('beforeend',`<option value="${esc(ka)}">${esc(agt(ka)?.name||'')}</option>`);fa.disabled=false;fa.value=ka}
       if(mode()!=='Assign only'){const fb=F0.elements.bookingWindow,wv=mode()==='Book to a booking window'?$('#bkw').value:'';if(fb){if(wv&&!fb.querySelector('option[value="'+wv.replace(/"/g,'\\"')+'"]'))fb.insertAdjacentHTML('beforeend',`<option value="${esc(wv)}">${esc(wv)}</option>`);fb.value=wv}}
       if(mode()!=='Assign only'){const fd=F0.elements.date,dv=$('#bkdt').value;if(!dv)return;if(fd){fd.value=dv;fd.dispatchEvent(new Event('change',{bubbles:true}))}else if(dv)F0.insertAdjacentHTML('beforeend',`<input type="hidden" name="date" value="${esc(dv)}">`)}F0.elements.status.value='Booked';BOOKKEEP=1;bd.close();F0.requestSubmit()};
+    if(MOB()&&isAgentMe()){const one=bc.querySelector('[data-sv]:not([data-sv=""])');if(one&&CARDS.length===1)one.click();$('#bkcards').hidden=true}
     bd.showModal()};
   if(id&&type==='job'&&$('#jsbtn'))$('#jsbtn').onclick=()=>openSheet(id);
   if(id&&type==='job'&&$('#invb'))$('#invb').onclick=()=>{const j=D.jobs.find(x=>x.id===id);if(!j||!CL2.includes(j.status)){toast('Only a Closed Complete or Closed Incomplete job can be invoiced');return}
