@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 418</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 419</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -293,7 +293,9 @@ async function sweepBlobs(){if(!(window.SB&&window.SB_MODE)||window.__swept||!AD
   catch(e){toast('Stored files could not be cleaned up: '+e.message)}}
 let DEEPJOB=new URLSearchParams(location.search).get('job'),DEEPTRY=0;
 function openDeepJob(){if(!DEEPJOB||!ME)return;const j=D.jobs.find(x=>x.id===DEEPJOB);
-  if(j&&myJobs().some(x=>x.id===j.id)){const id=DEEPJOB;DEEPJOB=null;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}V.view='jobs';render();openForm('job',id);return}
+  if(j&&myJobs().some(x=>x.id===j.id)){const id=DEEPJOB;DEEPJOB=null;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}V.view='jobs';render();
+    if(MOB()){const cs=[...document.querySelectorAll('[data-mjob="'+id+'"]')],c=cs.length?cs[0]:null;if(c){c.scrollIntoView({block:'center',behavior:'smooth'});c.style.transition='box-shadow .3s,background .3s';c.style.boxShadow='0 0 0 4px #7b3fc4';c.style.background='#f1e8ff';setTimeout(()=>{c.style.boxShadow='';c.style.background=''},6000)}else toast('That visit is not in your list of open visits');return}
+    openForm('job',id);return}
   if(++DEEPTRY<20)setTimeout(openDeepJob,500);else{DEEPJOB=null;toast('That job could not be found, or you do not have access to it')}}
 
 const MAIL_FROM_ADDR='noreply@repairability.co.uk';
