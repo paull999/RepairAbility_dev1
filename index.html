@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 425</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 426</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -740,7 +740,7 @@ function visitsBody(j){
   return vs.length?`<div id="vlist" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">${vs.map(x=>{const cur=last&&x.id===last.id,so=orgn(x.sorg);return`<div class="vcard" data-vid="${x.id}" style="border:1px solid ${cur?'var(--brand)':'var(--line)'};border-radius:var(--r);background:var(--panel);padding:14px;display:grid;gap:6px;align-content:start">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><strong style="font-size:16px">Visit ${x.visitNo||''}${cur?' <span style="font-size:12px;font-weight:600;color:var(--brand)">· current</span>':''}</strong><span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);white-space:nowrap">${esc(x.status||'')}</span></div>
     ${row('Servicer',esc(so?so.name:''))}${row('Scheduled',x.date?esc(fmt(x.date)):'')}${row('Window',esc(x.bookingWindow||''))}${row('Travel start (enroute)',fdtm(x.dispatchedAt))}${row('Arrived',fdtm(x.arrivedAt))}${row('Departed',fdtm(x.leftAt))}${row('Note',esc(x.note||''))}
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px"><span style="font-size:12px;color:var(--mute)">${esc(x.by||'')}${x.created?' · '+fdtm(x.created):''}</span><span style="white-space:nowrap"><button type="button" class="btn ghost" data-ved="${x.id}">Edit</button>${!AG&&cur?` <button type="button" class="btn ghost" data-vrm="${x.id}">Remove</button>`:''}</span></div></div>`}).join('')}</div>`:'<p class="empty">No visits yet. Booking the job adds the first visit.</p>'}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px"><span style="font-size:12px;color:var(--mute)">${esc(x.by||'')}${x.created?' · '+fdtm(x.created):''}</span><span style="white-space:nowrap"><button type="button" class="btn ghost" data-ved="${x.id}">Edit</button></span></div></div>`}).join('')}</div>`:'<p class="empty">No visits yet. Booking the job adds the first visit.</p>'}
 function eventsBody(j){
   const es=[...(j.events||[])].sort((a,b)=>(a.at||'')<(b.at||'')?1:-1);
   const html=`<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><fieldset style="border:1px solid var(--line);border-radius:var(--r);padding:8px 14px 12px;margin:0"><legend style="padding:0 6px;font-weight:600">Add Event</legend><div style="display:flex;gap:8px;flex-wrap:wrap">${['Email','Phone Call','Note'].map(l=>`<button type="button" class="btn ghost" data-evq="${l}">${l}</button>`).join('')}</div></fieldset></div>
@@ -1358,7 +1358,6 @@ document.addEventListener('click',e=>{
   {const mm=e.target.closest('#mmenu');if(mm){const o=document.body.classList.toggle('menuopen');mm.setAttribute('aria-expanded',o);return}if(document.body.classList.contains('menuopen')&&!e.target.closest('#who')||e.target.id==='out'||e.target.id==='cpw')document.body.classList.remove('menuopen')}
   const mvc=e.target.closest('[data-mvisit]');if(mvc){openVisit(mvc.dataset.mjob,mvc.dataset.mvisit);return}
   const ved=e.target.closest('[data-ved]');if(ved){const j=jobP();if(j)openVisit(j.id,ved.dataset.ved);return}
-  const vrm=e.target.closest('[data-vrm]');if(vrm){const j=jobP();if(j){const only=(j.visits||[]).length===1;ask(only?'Remove this visit? It is the only visit, so the job’s booking will be cleared and its status set to New.':'Remove this visit? The job will follow the previous visit.','Remove','Cancel').then(ok=>{if(!ok)return;const l=latestVisit(j);if(!l||l.id!==vrm.dataset.vrm)return;const old=snapJ(j);j.visits=j.visits.filter(x=>x.id!==l.id);if(j.visits.length)pullVisit(j);else{clearBook(j);j.status='New';j.bkSig=bkSig(j)}logHist(j,old);save();jrefresh()})}return}
   if(e.target.closest('#fladdb')){$('#fla').click();return}
   const fr=e.target.closest('[data-frm]');if(fr){const j=jobP();if(j){const ix=+fr.dataset.frm;ask('Remove this file?','Remove').then(ok=>{if(!ok)return;const old=snapJ(j);j.files.splice(ix,1);logHist(j,old);save();jrefresh()})}return}
   const fd=e.target.closest('[data-fdl]');if(fd){const f=((jobP()||{}).files||[])[+fd.dataset.fdl];if(f){if(!f.data){toast('This file is still loading. Try again in a moment.');return}fetch(f.data).then(r=>r.arrayBuffer()).then(b=>saveBytes(f.name,new Uint8Array(b))).catch(()=>toast('Couldn’t download the file'))}return}
