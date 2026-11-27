@@ -181,7 +181,7 @@ label.hlst .in{border-color:var(--brand);font-weight:600}
   <nav id="nav"></nav>
   <div class="side-foot" id="who" style="margin-top:auto;padding-bottom:0"></div>
   <div class="side-foot" style="margin-top:0"><span id="storetxt">Data is saved in this browser.</span></div>
-  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 416</span></div>
+  <div class="side-foot" style="margin-top:0;padding-top:0;opacity:.75"><span id="appver">Version 418</span></div>
 </aside>
 <main id="main"></main>
 </div>
@@ -699,7 +699,8 @@ function openVisit(jid,vid){const j=D.jobs.find(x=>x.id===jid);if(!j)return;if(c
   $('#vq-x').onclick=()=>$('#evd').close();
   if(MB){$('#vq-st').addEventListener('change',()=>{const o=$('#vq-badge');if(o)o.outerHTML=sbadge($('#vq-st').value)});
     {const rb=$('#vq-rb');if(rb)rb.onclick=()=>{$('#evd').close();openForm('job',jid);const bb=$('#bookb');if(bb&&!bb.hidden&&!bb.disabled)bb.click()}}
-    F.querySelectorAll('[data-vtab]').forEach(bt=>bt.onclick=()=>{const t=bt.dataset.vtab;$('#evd').close();openForm('job',jid);if($('#frm').querySelector('[data-tab-btn="'+t+'"]'))showTab(t)})}
+    const vid=ex?ex.id:'';
+    F.querySelectorAll('[data-vtab]').forEach(bt=>bt.onclick=()=>{const t=bt.dataset.vtab;$('#evd').close();openForm('job',jid);const fm=$('#frm');if(fm.querySelector('[data-tab-btn="'+t+'"]')){showTab(t);const tb=fm.querySelector('[data-tab-btn]'),bar=tb&&(tb.closest('[role=tablist]')||tb.parentElement);if(bar)bar.hidden=true;fm._h=null;const pd=$('#tabpad');if(pd)pd.style.display='none';fm.style.minHeight='';[...fm.children].forEach(c=>{if(c.tagName==='H2'||c.querySelector('#cancel')||c.id==='cancel'||c.dataset.tab===t||c.querySelector('[data-tab="'+t+'"]'))return;c.hidden=true});['#bookb','#invb','#jsbtn'].forEach(q=>{const x=fm.querySelector(q);if(x)x.hidden=true});const cn=fm.querySelector('#cancel');if(cn)cn.onclick=()=>{$('#dlg').close();openVisit(jid,vid)};fm.insertAdjacentHTML('afterbegin','<button type="button" class="btn ghost" id="backv" style="justify-self:start;margin-bottom:6px">&larr; Back to visit</button>');$('#backv').onclick=()=>{$('#dlg').close();openVisit(jid,vid)}}})}
   $('#vq-so').onchange=()=>{const w=$('#vq-bw');w.innerHTML=opt(bwOpts($('#vq-so').value,''),'');w.value=''};
   F.onsubmit=async e=>{e.preventDefault();
     const loc=id=>$(id).value,iso=v=>v?new Date(v).toISOString():'';
